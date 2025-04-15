@@ -62,19 +62,23 @@ const Home = () => {
                 <div className="container text-center">
                     <h2>Welcome to PicPlate</h2>
                     <p>
-                        PicPlate is your AI-powered food and restaurant recommender. Based on your mood or any uploaded photo,
-                        our app uses intelligent analysis of your shared social photos to suggest the perfect meal or
-                        place to dine. Whether you’re feeling joyful, calm, or excited – we’ve got the taste for your vibe!
+                        PicPlate is an AI-powered food and restaurant recommendation platform designed for educational purposes. By analyzing the mood and visual elements in uploaded images, PicPlate helps you discover healthy recipes and nearby restaurants that match your vibe.
                     </p>
+                    <p>
+                        <strong>Note:</strong> PicPlate is an independent project and is not affiliated with or endorsed by Pinterest. We do not store Pinterest credentials or any uploaded images.
+                    </p>
+
                     <h3 className="mt-4 mb-3">How It Works</h3>
                     <ol className="text-start mx-auto" style={{ maxWidth: '700px' }}>
-                        <li><strong>Login & Connect:</strong> Sign in and connect Pinterest to upload photos.</li>
-                        <li><strong>AI-Powered Analysis:</strong> Google Vision detects mood and facial features (faces are blurred for privacy).</li>
-                        <li><strong>Smart Suggestions:</strong> Gemini API and Google Maps recommend dishes and restaurants near you.</li>
+                        <li><strong>Login & Upload:</strong> Sign in using Google or email. Connect Pinterest (optional) to upload your selected images. We only access the images you explicitly choose to share.</li>
+                        <li><strong>Real-Time Mood Detection:</strong> Google Vision analyzes your image for facial expressions, emotions, and dominant colors. Faces are blurred automatically to protect privacy.</li>
+                        <li><strong>AI-Generated Recommendations:</strong> Google Gemini creates healthy recipe suggestions and identifies local dining spots based on your mood and location.</li>
                     </ol>
-                    <p><small>This project is built purely for academic use. No personal data is stored.</small></p>
+
+                    <p><small>PicPlate is built as an academic research tool. We do not store your Pinterest credentials, and uploaded content is processed in real-time without being permanently saved.</small></p>
                 </div>
             </section>
+
 
             {/* Menu Grid Section - Gray Slanted */}
             <section className="gray-section py-4">
