@@ -42,7 +42,7 @@ const Home = () => {
                             style={{ backgroundImage: `url(${img})` }}
                         >
                             <div className="text-center">
-                                <h1 className="slider-heading animated-text">{idx === 0 ? 'Eat, Drink at Gourmet' : 'Enjoy delicious food at Gourmet'}</h1>
+                                <h1 className="slider-heading animated-text">{idx === 0 ? 'PicPlate' : 'Enjoy delicious food'}</h1>
                                 <button onClick={() => navigate('/login')} className="btn btn-outline-white mt-3">Login</button>
                             </div>
                         </div>
