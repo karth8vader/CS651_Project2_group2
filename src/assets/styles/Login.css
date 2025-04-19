@@ -1,209 +1,160 @@
-/* Overall page styling */
-.login-page {
-    font-family: 'Open Sans', sans-serif;
-}
+/* Login.css */
 
-/* HERO SECTION */
-.login-hero {
+.login-page {
+    background: linear-gradient(to bottom, #0d0d0d, #1a1a1a);
+    font-family: 'Kanit', sans-serif;
+    height: 100vh;
+    overflow: hidden;
     position: relative;
 }
 
-.hero-overlay {
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.35); /* Adjust overlay darkness if needed */
+.navbar {
+    z-index: 10;
+    position: relative;
+}
+
+.main-content {
+    position: relative;
+    z-index: 2;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.main-content.scrollable {
+    overflow-y: auto;
+    padding-bottom: 4rem; /* ensure spacing below the login box */
+}
+
+.hero-center {
+    text-align: center;
+    z-index: 3;
 }
 
 .hero-title {
-    font-family: 'DM Serif Display', serif;
-    font-size: 48px;
-    margin-bottom: 10px;
-    color: #fff;
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: white;
 }
 
-.hero-subtitle {
-    font-size: 18px;
-    color: #fff;
+.hero-title span {
+    color: #f04e93;
 }
 
-/* SLANTED LOGIN SECTION (adapted from gourmet contact page) */
-.login-slant-section {
-    position: relative;
-    padding: 0px 0 40px;
-    background: #fff;
+.get-started-btn {
+    margin-top: 2rem;
+    padding: 12px 40px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 40px;
+    border: none;
+    background-color: #f04e93;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
 }
 
-/* Updated slant pseudo-element to match the contact us page screenshot */
-.login-slant-section::before {
-    content: "";
-    position: absolute;
-    top: 0px;    /* Increased from -40px for a deeper slant */
-    left: 0;
-    width: 100%;
-    height: 80px;  /* Increased height to match the contact page look */
-    background: #fff;
-    transform: skewY(-3deg);
-    transform-origin: 0;
-    z-index: 1;
+.get-started-btn:hover {
+    background-color: #c73875;
 }
 
-.relative-higher {
-    position: relative;
-    z-index: 2;
+.login-dialog {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 3;
 }
 
-/* LOGIN BOX STYLING */
+.fade-in {
+    animation: fadeInUp 0.6s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(40px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .login-box {
-    background: rgba(255, 255, 255, 0.95);
-    padding: 40px;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    max-width: 500px;
-    margin: 0 auto;
+    background: white;
+    padding: 2.5rem;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 420px;
+    width: 100%;
+    z-index: 4;
     position: relative;
-    z-index: 2;
 }
 
 .login-logo {
-    height: 80px;
+    width: 60px;
+    height: auto;
+    margin-bottom: 1rem;
 }
 
-/* FORM STYLES */
-.form-group {
-    margin-bottom: 20px;
-    text-align: left;
-}
-
-.form-group label {
-    font-weight: 600;
-    margin-bottom: 5px;
-    display: block;
-}
-
-.form-control {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-size: 14px;
-}
-
-/* BUTTON STYLING */
-.btn {
-    font-size: 16px;
-    border-radius: 5px;
-}
-
-.btn-primary {
-    background-color: #e60023;
-    border: none;
-}
-
-.btn-outline-primary {
-    color: #e60023;
-    border: 2px solid #e60023;
-}
-
-.btn-outline-primary:hover {
-    background-color: #e60023;
-    color: #fff;
-}
-
-/* OR SEPARATOR STYLING */
-.or-separator {
-    position: relative;
-    text-align: center;
-    font-size: 14px;
-    color: #777;
-    margin: 20px 0;
-}
-
-.or-separator span {
-    background: #fff;
-    padding: 0 10px;
-    position: relative;
-    z-index: 1;
-}
-
-.or-separator::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 0;
-    width: 100%;
-    height: 1px;
-    background: #ddd;
-    z-index: 0;
-}
-
-.pinterest-icon {
-    height: 20px;        /* Adjust the size as needed */
-    margin-right: 8px;   /* Adds space between the icon and the text */
+.social-icon {
+    width: 24px;
+    margin-right: 8px;
     vertical-align: middle;
 }
 
-/* SLANTED GRAY FOOTER SECTION */
-.slant-gray-footer {
+.or-separator {
+    text-align: center;
     position: relative;
-    background: #f8f8f8;
-    padding: 80px 0 40px;
-    width: 100%;
+    margin: 2rem 0;
+    font-weight: 500;
+    color: #bab6b6;
 }
 
-.slant-gray-footer::before {
-    content: "";
+.or-separator span::before,
+.or-separator span::after {
+    content: '';
     position: absolute;
+    top: 50%;
+    width: 40%;
+    height: 1px;
+    background: #ddd;
+}
+
+.or-separator span::before {
+    left: 0;
+}
+
+.or-separator span::after {
+    right: 0;
+}
+
+/* Background image gallery */
+#gallery {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
     top: 0;
     left: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.image-wrapper {
+    position: absolute;
+    width: 240px;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgb(16, 16, 16);
+    transition: transform 0.3s ease;
+}
+
+.image-wrapper img {
     width: 100%;
-    height: 70px;
-    background: #f8f8f8;
-    transform: skewY(-3deg);
-    transform-origin: 0;
-    z-index: 1;
-}
-
-.slant-gray-footer .container {
-    position: relative;
-    z-index: 2;
-}
-
-.footer-column h3 {
-    font-size: 20px;
-    margin-bottom: 20px;
-    color: #333;
-}
-
-.footer-column p,
-.footer-column .footer-contact {
-    font-size: 14px;
-    color: #555;
-}
-
-.footer-email {
-    color: #e60023;
-    text-decoration: none;
-}
-.footer-email:hover {
-    text-decoration: underline;
-}
-
-/* Quick Links */
-.footer-link li {
-    list-style: none;
-    margin-bottom: 10px;
-}
-.footer-link li a {
-    color: #e60023;
-    text-decoration: none;
-}
-.footer-link li a:hover {
-    text-decoration: underline;
-}
-
-/* Footer bottom text */
-.slant-gray-footer .row p {
-    margin-top: 20px;
-    color: #777;
-    font-size: 14px;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.35;
 }
