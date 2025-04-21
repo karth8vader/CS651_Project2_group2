@@ -1,9 +1,11 @@
+// frontend/src/pages/login.js
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
+import { useGoogleLogin } from '@react-oauth/google';
+import axios from 'axios';
 import '../assets/styles/Login.css';
 import Navbar from '../components/navbar';
-import picplateLogo from '../assets/images/picplate-logo.png';
 import googlePhotosLogo from '../assets/images/google-photos-icon.png';
 import Img1 from '../assets/images/Img1.jpg';
 import Img2 from '../assets/images/Img2.jpg';
@@ -25,10 +27,8 @@ const floatingImages = [
     { path: Img9, top: '77%', left: '80%', speed: 0.04 }
 ];
 
-
 const Login = () => {
     const navigate = useNavigate();
-    const [showLogin, setShowLogin] = useState(false);
 
     useEffect(() => {
         const handleMouseMove = (e) => {
@@ -46,60 +46,44 @@ const Login = () => {
         };
 
         window.addEventListener("mousemove", handleMouseMove);
-
-        return () => {
-            window.removeEventListener("mousemove", handleMouseMove);
-        };
+        return () => window.removeEventListener("mousemove", handleMouseMove);
     }, []);
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        navigate('/home');
-    };
+    const handleGooglePhotosLogin = useGoogleLogin({
+        flow: 'implicit',
+        scope: 'https://www.googleapis.com/auth/photoslibrary.readonly https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile openid',
+        onSuccess: async (tokenResponse) => {
+            console.log('Google token response:', tokenResponse);
+            localStorage.setItem('google_access_token', tokenResponse.access_token);
+            localStorage.setItem('google_user', JSON.stringify(tokenResponse));
 
-    const handleGooglePhotosLogin = () => {
-        navigate('/home');
-    };
+            try {
+                const { data } = await axios.post('http://localhost:3001/api/auth/login', {
+                    accessToken: tokenResponse.access_token,
+                });
+                localStorage.setItem('user', JSON.stringify(data.user));
+            } catch (err) {
+                console.error('Google user save failed', err);
+            }
+
+            navigate('/profile');
+        },
+        onError: () => {
+            console.error('Google Login Failed');
+        }
+    });
 
     return (
         <div className="login-page">
             <Navbar />
             <div className="main-content scrollable">
-                {!showLogin && (
-                    <header className={`hero-center ${showLogin ? 'fade-out' : ''}`}>
-                        <h1 className="hero-title">Login to <span>PicPlate</span></h1>
-                        <button onClick={() => setShowLogin(true)} className="get-started-btn">Login</button>
-                    </header>
-                )}
-
-                {showLogin && (
-                    <section className="login-dialog fade-in">
-                        <div className="login-box">
-                            <div className="text-center mb-4">
-                                <img src={picplateLogo} alt="PicPlate Logo" className="login-logo" />
-                            </div>
-                            <h2 className="text-center">Login</h2>
-                            <form onSubmit={handleSubmit} className="mt-3">
-                                <div className="form-group">
-                                    <label htmlFor="email">Email</label>
-                                    <input type="email" id="email" className="form-control" placeholder="Enter Email" required />
-                                </div>
-                                <div className="form-group">
-                                    <label htmlFor="password">Password</label>
-                                    <input type="password" id="password" className="form-control" placeholder="Enter Password" required />
-                                </div>
-                                <button type="submit" className="btn btn-primary btn-block mt-4">Login</button>
-                            </form>
-                            <div className="or-separator my-4">
-                                <span>OR</span>
-                            </div>
-                            <button type="button" onClick={handleGooglePhotosLogin} className="btn btn-outline-primary btn-block">
-                                <img src={googlePhotosLogo} alt="Google Photos" className="social-icon" />
-                                Sign in with Google Photos
-                            </button>
-                        </div>
-                    </section>
-                )}
+                <header className="hero-center">
+                    <h1 className="hero-title">Login to <span>PicPlate</span></h1>
+                    <button onClick={handleGooglePhotosLogin} className="get-started-btn">
+                        <img src={googlePhotosLogo} alt="Google Photos" className="social-icon" />
+                        Sign in with Google Photos
+                    </button>
+                </header>
             </div>
 
             <div id="gallery">
