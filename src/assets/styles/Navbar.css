@@ -1,26 +1,31 @@
 /* Navbar.css */
 
+/* Override Bootstrap's bg-dark class with a dark cream color */
+.navbar.bg-dark {
+    background-color: #d2b48c !important; /* Dark cream/tan color */
+}
+
 
 
 /* Centered brand uses DM Serif Display for a gourmet-like style */
 .navbar-brand {
     font-family: 'DM Serif Display', serif;
     font-size: 26px;
-    color: #fff !important;
+    color: #333 !important;
     text-decoration: none;
 }
 
 /* Nav link styling (Bootstrap classes handle most layout) */
 .navbar-nav .nav-link {
-    font-family: 'Open Sans', sans-serif;
+    font-family: 'DM Serif Display', serif;
     font-size: 16px;
-    color: #fff !important;
+    color: #333 !important;
     transition: color 0.3s ease;
     margin-left: 20px; /* spacing between nav items */
 }
 .navbar-nav .nav-link:hover {
-    color: #e60023 !important;
+    color: #ffffff !important;
 }
 .navbar-nav .nav-link.active {
-    color: #e60023 !important;
+    color: #ffffff !important;
 }

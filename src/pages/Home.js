@@ -17,7 +17,7 @@ const Home = () => {
     useEffect(() => {
         const interval = setInterval(() => {
             setActiveSlide((prev) => (prev + 1) % sliderImages.length);
-        }, 4000);
+        }, 8000);
         return () => clearInterval(interval);
     }, []);
 
@@ -38,7 +38,7 @@ const Home = () => {
                     {sliderImages.map((img, idx) => (
                         <div
                             key={idx}
-                            className={`slider-item ${idx === activeSlide ? 'active' : ''}`}
+                            className={`slider-item ${idx === activeSlide ? 'active' : idx < activeSlide ? 'prev' : 'next'}`}
                             style={{ backgroundImage: `url(${img})` }}
                         >
                             <div className="text-center">
@@ -47,13 +47,13 @@ const Home = () => {
                             </div>
                         </div>
                     ))}
-                    <div className="custom-shape-divider-bottom">
+                    {/*<div className="custom-shape-divider-bottom">
                         <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
                             <path d="M0,0V46.29c47.74,22.19,106.29,32.05,158,28,70-5.47,136-33.69,206-38,72.46-4.45,147.76,17.11,218,35,69.1,17.63,138.77,30.25,209,27,66.49-3.09,130.43-21.36,189-46V0Z" opacity=".25" className="shape-fill"></path>
                             <path d="M0,0V15.81C47.42,40.69,103.76,54,158,52,228,49.52,294.2,26.35,364,22c71.45-4.48,141.76,15.78,212,35,65.92,18.13,132.48,30.31,200,26,58.31-3.72,113.48-20.3,166-39.8V0Z" opacity=".5" className="shape-fill"></path>
                             <path d="M0,0V5.63C43,27.91,96,50.25,158,53c72.39,3.28,142.53-18.48,212-35,67.06-16,138.2-24.88,209-15,61,8.64,113.52,30.85,173,39,59.43,8.14,122.36,6.55,179-7V0Z" className="shape-fill"></path>
                         </svg>
-                    </div>
+                    </div>*/}
                 </section>
             </div>
 

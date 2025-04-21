@@ -1,12 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import '../assets/styles/Navbar.css'; // For your custom navbar styles
-import picplateLogo from '../assets/images/picplate-logo.png'; // Update the path if needed
+import picplateLogo from '../assets/images/picplate-logo.svg'; // Update the path if needed
 
 const Navbar = () => {
     return (
         <header role="banner">
-            <nav className="navbar navbar-expand-md navbar-dark bg-dark">
+            <nav className="navbar navbar-expand-md navbar-light bg-dark">
                 {/*
           position-relative allows us to absolutely position the toggler,
           while the brand sits centrally (mx-auto)
