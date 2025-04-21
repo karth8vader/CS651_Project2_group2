@@ -17,7 +17,7 @@ router.post('/', async (req, res) => {
     }
 
     try {
-        // Download image from Google Photos using access token
+        // Download image from Google Photos using an access token
         const imageResponse = await axios.get(imageUrl, {
             responseType: 'arraybuffer',
             headers: { Authorization: `Bearer ${accessToken}` }
@@ -37,26 +37,63 @@ router.post('/', async (req, res) => {
 
         console.dir(result, { depth: null }); // ✅ Log the full response for debugging
 
-        // Extract labels
-        const labels = result.labelAnnotations?.map(label => label.description) || [];
+        // Extract labels with boundingPoly
+        const labels = result.labelAnnotations?.map(label => ({
+            description: label.description,
+            boundingPoly: label.boundingPoly
+        })) || [];
 
         // Extract colors
         const colors = result.imagePropertiesAnnotation?.dominantColors?.colors.map(c => c.color) || [];
 
-        // Extract emotions from first face
-        const face = result.faceAnnotations?.[0];
+        // Extract emotions and boundingPoly from faces
+        const faces = result.faceAnnotations || [];
         let emotions = [];
-        if (face) {
-            const possibleEmotions = ['joy', 'sorrow', 'anger', 'surprise'];
-            possibleEmotions.forEach(emotion => {
-                const likelihood = face[`${emotion}Likelihood`];
-                if (['VERY_LIKELY', 'LIKELY', 'POSSIBLE'].includes(likelihood)) {
-                    emotions.push(emotion);
+        let faceBoundingPolys = [];
+
+        if (faces.length > 0) {
+            faces.forEach(face => {
+                const faceEmotions = [];
+                const possibleEmotions = ['joy', 'sorrow', 'anger', 'surprise'];
+                possibleEmotions.forEach(emotion => {
+                    const likelihood = face[`${emotion}Likelihood`];
+                    if (['VERY_LIKELY', 'LIKELY', 'POSSIBLE'].includes(likelihood)) {
+                        faceEmotions.push(emotion);
+                    }
+                });
+
+                if (faceEmotions.length > 0) {
+                    emotions = emotions.concat(faceEmotions);
+                }
+
+                if (face.boundingPoly) {
+                    faceBoundingPolys.push(face.boundingPoly);
                 }
             });
         }
 
-        res.json({ labels, colors, emotions });
+        // Extract text annotations with boundingPoly if available
+        const textBoundingPolys = result.textAnnotations?.map(text => ({
+            description: text.description,
+            boundingPoly: text.boundingPoly
+        })) || [];
+
+        // Send all data including boundingPolys
+        res.json({ 
+            labels, 
+            colors, 
+            emotions, 
+            boundingPolys: {
+                faces: faceBoundingPolys,
+                labels: labels.filter(label => label.boundingPoly).map(label => ({
+                    description: label.description,
+                    boundingPoly: label.boundingPoly
+                })),
+                text: textBoundingPolys
+            },
+            // Include simple label descriptions for backward compatibility
+            labelDescriptions: labels.map(label => label.description)
+        });
 
     } catch (err) {
         console.log('🔍 Received imageUrl:', imageUrl);

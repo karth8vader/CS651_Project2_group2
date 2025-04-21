@@ -1,5 +1,5 @@
 // frontend/src/pages/Profile.js
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import Modal from 'react-modal';
 import Navbar from '../components/navbar';
@@ -15,6 +15,59 @@ const Profile = () => {
     const [activeTab, setActiveTab] = useState('analysis');
     const [useEmotions, setUseEmotions] = useState(false);
     const [useColors, setUseColors] = useState(false);
+    const [showBoundingBoxes, setShowBoundingBoxes] = useState(true);
+    const canvasRef = useRef(null);
+
+    // CSS for hover effect
+    const styles = {
+        imageContainer: {
+            position: 'relative',
+        },
+        hoverOverlay: {
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            color: 'white',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderRadius: '8px',
+            opacity: 0,
+            transition: 'opacity 0.3s',
+        },
+        photoWrapper: {
+            textAlign: 'center', 
+            maxWidth: '220px',
+            position: 'relative',
+            cursor: 'pointer',
+        },
+        analyzeText: {
+            fontSize: '18px',
+            fontWeight: 'bold',
+        }
+    };
+
+    // Add CSS to the document head
+    useEffect(() => {
+        // Create a style element
+        const style = document.createElement('style');
+        // Add the CSS rules
+        style.innerHTML = `
+            .photo-item:hover .hover-overlay {
+                opacity: 1 !important;
+            }
+        `;
+        // Append the style element to the head
+        document.head.appendChild(style);
+
+        // Clean up function to remove the style when component unmounts
+        return () => {
+            document.head.removeChild(style);
+        };
+    }, []);
 
     useEffect(() => {
         const googleUser = JSON.parse(localStorage.getItem('google_user'));
@@ -44,6 +97,12 @@ const Profile = () => {
         const googleUser = JSON.parse(localStorage.getItem('google_user'));
         const accessToken = googleUser?.access_token || localStorage.getItem('google_access_token');
 
+        // Reset canvas if it exists
+        if (canvasRef.current) {
+            const ctx = canvasRef.current.getContext('2d');
+            ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        }
+
         setSelectedPhoto({ id: photoId, url: photoUrl });
         setModalOpen(true);
 
@@ -65,6 +124,84 @@ const Profile = () => {
 
     const selectedData = selectedPhoto ? analysisResults[selectedPhoto.id] : null;
 
+    // Function to draw image and bounding boxes on canvas
+    const drawImageAndBoxes = () => {
+        if (!selectedPhoto || !selectedData || !canvasRef.current || !showBoundingBoxes) return;
+
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+
+        img.onload = () => {
+            // Set canvas dimensions to match the image
+            canvas.width = img.width;
+            canvas.height = img.height;
+
+            // Draw the image on the canvas
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            // Draw bounding boxes if available
+            if (selectedData.boundingPolys) {
+                ctx.fillStyle = 'black';
+
+                // Draw boxes for faces
+                if (selectedData.boundingPolys.faces) {
+                    selectedData.boundingPolys.faces.forEach(poly => {
+                        if (poly.vertices && poly.vertices.length >= 4) {
+                            ctx.beginPath();
+                            ctx.moveTo(poly.vertices[0].x, poly.vertices[0].y);
+                            for (let i = 1; i < poly.vertices.length; i++) {
+                                ctx.lineTo(poly.vertices[i].x, poly.vertices[i].y);
+                            }
+                            ctx.closePath();
+                            ctx.fill();
+                        }
+                    });
+                }
+
+                // Draw boxes for labels
+                if (selectedData.boundingPolys.labels) {
+                    selectedData.boundingPolys.labels.forEach(item => {
+                        const poly = item.boundingPoly;
+                        if (poly && poly.vertices && poly.vertices.length >= 4) {
+                            ctx.beginPath();
+                            ctx.moveTo(poly.vertices[0].x, poly.vertices[0].y);
+                            for (let i = 1; i < poly.vertices.length; i++) {
+                                ctx.lineTo(poly.vertices[i].x, poly.vertices[i].y);
+                            }
+                            ctx.closePath();
+                            ctx.fill();
+                        }
+                    });
+                }
+
+                // Draw boxes for text
+                if (selectedData.boundingPolys.text) {
+                    selectedData.boundingPolys.text.forEach(item => {
+                        const poly = item.boundingPoly;
+                        if (poly && poly.vertices && poly.vertices.length >= 4) {
+                            ctx.beginPath();
+                            ctx.moveTo(poly.vertices[0].x, poly.vertices[0].y);
+                            for (let i = 1; i < poly.vertices.length; i++) {
+                                ctx.lineTo(poly.vertices[i].x, poly.vertices[i].y);
+                            }
+                            ctx.closePath();
+                            ctx.fill();
+                        }
+                    });
+                }
+            }
+        };
+
+        // Load the image
+        img.src = `${selectedPhoto.url}=w400`;
+    };
+
+    // Effect to draw boxes when analysis results or showBoundingBoxes changes
+    useEffect(() => {
+        drawImageAndBoxes();
+    }, [selectedData, showBoundingBoxes]);
+
     return (
         <div>
             <Navbar />
@@ -73,18 +210,22 @@ const Profile = () => {
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', justifyContent: 'center', padding: '20px' }}>
                 {photos.map(photo => (
-                    <div key={photo.id} style={{ textAlign: 'center', maxWidth: '220px' }}>
-                        <img
-                            src={`${photo.baseUrl}=w400`}
-                            alt="Google Photo"
-                            style={{ width: '100%', borderRadius: '8px' }}
-                        />
-                        <button
-                            className="btn btn-sm btn-primary mt-2"
-                            onClick={() => handleAnalyzePhoto(photo.id, photo.baseUrl)}
-                        >
-                            Analyze with Vision API
-                        </button>
+                    <div 
+                        key={photo.id} 
+                        style={styles.photoWrapper}
+                        onClick={() => handleAnalyzePhoto(photo.id, photo.baseUrl)}
+                        className="photo-item"
+                    >
+                        <div style={styles.imageContainer} className="image-container">
+                            <img
+                                src={`${photo.baseUrl}=w400`}
+                                alt="Google Photo"
+                                style={{ width: '100%', borderRadius: '8px' }}
+                            />
+                            <div style={styles.hoverOverlay} className="hover-overlay">
+                                <span style={styles.analyzeText}>Analyze</span>
+                            </div>
+                        </div>
                     </div>
                 ))}
             </div>
@@ -105,11 +246,22 @@ const Profile = () => {
                 {selectedPhoto && (
                     <>
                         <div style={{ display: 'flex', gap: '30px' }}>
-                            <img
-                                src={`${selectedPhoto.url}=w400`}
-                                alt="Selected"
-                                style={{ width: '300px', borderRadius: '8px' }}
-                            />
+                            <div>
+                                <canvas
+                                    ref={canvasRef}
+                                    style={{ width: '300px', borderRadius: '8px' }}
+                                />
+                                <div style={{ marginTop: '10px' }}>
+                                    <label>
+                                        <input
+                                            type="checkbox"
+                                            checked={showBoundingBoxes}
+                                            onChange={() => setShowBoundingBoxes(!showBoundingBoxes)}
+                                        />{' '}
+                                        Show Bounding Boxes
+                                    </label>
+                                </div>
+                            </div>
                             <div style={{ flex: 1 }}>
                                 <div>
                                     <button onClick={() => setActiveTab('analysis')}>Analysis</button>
@@ -141,9 +293,15 @@ const Profile = () => {
                                         <div style={{ marginTop: '20px' }}>
                                             <strong>Labels:</strong>
                                             <ul>
-                                                {selectedData.labels.map((label, idx) => (
-                                                    <li key={idx}>{label}</li>
-                                                ))}
+                                                {selectedData.labelDescriptions ? (
+                                                    selectedData.labelDescriptions.map((label, idx) => (
+                                                        <li key={idx}>{label}</li>
+                                                    ))
+                                                ) : (
+                                                    selectedData.labels.map((label, idx) => (
+                                                        <li key={idx}>{typeof label === 'string' ? label : label.description}</li>
+                                                    ))
+                                                )}
                                             </ul>
 
                                             <strong>Emotions:</strong>

@@ -9,14 +9,14 @@ var debug = require('debug')('CS651_Project2_group2:server');
 var http = require('http');
 
 /**
- * Get port from environment and store in Express.
+ * Get port from the environment and store in Express.
  */
 
 var port = normalizePort(process.env.PORT || '3001');
 app.set('port', port);
 
 /**
- * Create HTTP server.
+ * Create an HTTP server.
  */
 
 var server = http.createServer(app);
