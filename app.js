@@ -12,18 +12,25 @@ var app = express();
 var photosRouter = require('./routes/photos');
 var authRouter = require('./routes/auth');
 var visionRouter = require('./routes/vision');
+var geminiRouter = require('./routes/gemini');
 
 const cors = require('cors');
-// Serve React build from "picplate-frontend/build"
 
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://picplate-login-app.wl.r.appspot.com',
+];
 
-
-app.use(express.static(path.join(__dirname, 'picplate-frontend/build')));
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'picplate-frontend/build', 'index.html'));
-});
-
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+}));
 
 // Set up view engine (optional, only if you still use views)
 app.set('views', path.join(__dirname, 'views'));
@@ -33,13 +40,22 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(cors());
-// API routes
+
+// API routes - these need to be defined BEFORE the static file middleware
 app.use('/api', indexRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/photos', photosRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/vision', visionRouter);
+app.use('/api/gemini', geminiRouter);
+
+// Serve React build from "picplate-frontend/build" - this should come AFTER API routes
+app.use(express.static(path.join(__dirname, 'picplate-frontend/build')));
+
+// Catch-all route - this should be the LAST route
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'picplate-frontend/build', 'index.html'));
+});
 
 // Error handler for 404 and other errors
 app.use(function (req, res, next) {
@@ -52,5 +68,7 @@ app.use(function (err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
+
+console.log("✅ App initialized successfully");
 
 module.exports = app;

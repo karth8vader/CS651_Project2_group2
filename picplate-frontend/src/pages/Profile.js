@@ -16,7 +16,10 @@ const Profile = () => {
     const [useEmotions, setUseEmotions] = useState(false);
     const [useColors, setUseColors] = useState(false);
     const [showBoundingBoxes, setShowBoundingBoxes] = useState(true);
+    const [geminiOutput, setGeminiOutput] = useState('');
     const canvasRef = useRef(null);
+
+    const URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
     // CSS for hover effect
     const styles = {
@@ -39,7 +42,7 @@ const Profile = () => {
             transition: 'opacity 0.3s',
         },
         photoWrapper: {
-            textAlign: 'center', 
+            textAlign: 'center',
             maxWidth: '220px',
             position: 'relative',
             cursor: 'pointer',
@@ -70,7 +73,8 @@ const Profile = () => {
     }, []);
 
     useEffect(() => {
-        const googleUser = JSON.parse(localStorage.getItem('google_user'));
+        const googleUserItem = localStorage.getItem('google_user');
+        const googleUser = googleUserItem && googleUserItem !== 'undefined' ? JSON.parse(googleUserItem) : null;
         const token = googleUser?.access_token || localStorage.getItem('google_access_token');
 
         if (!token) {
@@ -80,12 +84,14 @@ const Profile = () => {
 
         const fetchPhotos = async () => {
             try {
-                const response = await axios.post('http://localhost:3001/api/photos', {
+                const response = await axios.post(`${URL}/api/photos`, {
                     accessToken: token
+
                 });
-                setPhotos(response.data.photos);
+                setPhotos(response.data.photos || []);
             } catch (err) {
                 console.error('Failed to fetch photos:', err);
+                console.log('🔐 Using accessToken:', token);
                 setError('Failed to load Google Photos.');
             }
         };
@@ -94,7 +100,8 @@ const Profile = () => {
     }, []);
 
     const handleAnalyzePhoto = async (photoId, photoUrl) => {
-        const googleUser = JSON.parse(localStorage.getItem('google_user'));
+        const googleUserItem = localStorage.getItem('google_user');
+        const googleUser = googleUserItem && googleUserItem !== 'undefined' ? JSON.parse(googleUserItem) : null;
         const accessToken = googleUser?.access_token || localStorage.getItem('google_access_token');
 
         // Reset canvas if it exists
@@ -105,9 +112,10 @@ const Profile = () => {
 
         setSelectedPhoto({ id: photoId, url: photoUrl });
         setModalOpen(true);
+        setGeminiOutput('');
 
         try {
-            const response = await axios.post('http://localhost:3001/api/vision', {
+            const response = await axios.post(`${URL}/api/vision`, {
                 imageUrl: photoUrl,
                 accessToken
             });
@@ -202,6 +210,49 @@ const Profile = () => {
         drawImageAndBoxes();
     }, [selectedData, showBoundingBoxes]);
 
+    const handleGeminiRecipeRequest = async () => { // ✅ NEW FUNCTION
+        if (!selectedData) return;
+
+        try {
+            console.log('Sending request to Gemini API with data:', {
+                labels: selectedData.labels,
+                emotions: selectedData.emotions,
+                colors: selectedData.colors,
+                useEmotions: useEmotions,
+                useColors: useColors
+            });
+
+            const response = await axios.post(`${URL}/api/gemini/generate-recipe`, {
+                labels: selectedData.labels,
+                emotions: selectedData.emotions,
+                colors: selectedData.colors,
+                useEmotions: useEmotions,
+                useColors: useColors
+            });
+
+            console.log('Received response from Gemini API:', response.data);
+            setGeminiOutput(response.data.recipe || 'No response from Gemini.');
+        } catch (err) {
+            console.error('Gemini API error:', err);
+            console.error('Error details:', {
+                message: err.message,
+                response: err.response ? {
+                    status: err.response.status,
+                    data: err.response.data
+                } : 'No response data'
+            });
+
+            let errorMessage = 'Failed to get recipe from Gemini.';
+            if (err.response && err.response.data && err.response.data.error) {
+                errorMessage += ` Error: ${err.response.data.error}`;
+            } else if (err.message) {
+                errorMessage += ` Error: ${err.message}`;
+            }
+
+            setGeminiOutput(errorMessage);
+        }
+    };
+
     return (
         <div>
             <Navbar />
@@ -209,9 +260,9 @@ const Profile = () => {
             {error && <p className="text-danger text-center">{error}</p>}
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', justifyContent: 'center', padding: '20px' }}>
-                {photos.map(photo => (
-                    <div 
-                        key={photo.id} 
+                {(photos || []).map(photo => (
+                    <div
+                        key={photo.id}
                         style={styles.photoWrapper}
                         onClick={() => handleAnalyzePhoto(photo.id, photo.baseUrl)}
                         className="photo-item"
@@ -337,9 +388,13 @@ const Profile = () => {
                                     </div>
                                 )}
 
-                                {activeTab === 'recipes' && (
+                                {activeTab === 'recipes' && selectedData && (
                                     <div>
-                                        <h5>Recipe Tab (To be implemented)</h5>
+                                        <h5>Recipe Suggestions</h5>
+                                        <button className="btn btn-success mb-3" onClick={handleGeminiRecipeRequest}>
+                                            Get Recipe
+                                        </button>
+                                        <div style={{ whiteSpace: 'pre-wrap' }}>{geminiOutput}</div>
                                     </div>
                                 )}
                             </div>

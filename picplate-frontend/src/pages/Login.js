@@ -27,6 +27,8 @@ const floatingImages = [
     { path: Img9, top: '77%', left: '80%', speed: 0.04 }
 ];
 
+const URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
 const Login = () => {
     const navigate = useNavigate();
 
@@ -58,7 +60,7 @@ const Login = () => {
             localStorage.setItem('google_user', JSON.stringify(tokenResponse));
 
             try {
-                const { data } = await axios.post('http://localhost:3001/api/auth/login', {
+                const { data } = await axios.post(`${URL}/api/auth/login`, {
                     accessToken: tokenResponse.access_token,
                 });
                 localStorage.setItem('user', JSON.stringify(data.user));
