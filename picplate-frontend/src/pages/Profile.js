@@ -3,8 +3,26 @@ import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import Modal from 'react-modal';
 import Navbar from '../components/navbar';
+import showdown from 'showdown';
 
 Modal.setAppElement('#root');
+
+// Use showdown library for markdown to HTML conversion
+const markdownToHtml = (markdown) => {
+    if (!markdown) return '';
+
+    // Create showdown converter instance
+    const converter = new showdown.Converter({
+        tables: true,
+        simplifiedAutoLink: true,
+        strikethrough: true,
+        tasklists: true,
+        openLinksInNewWindow: true
+    });
+
+    // Convert markdown to HTML
+    return converter.makeHtml(markdown);
+};
 
 const Profile = () => {
     const [photos, setPhotos] = useState([]);
@@ -15,7 +33,7 @@ const Profile = () => {
     const [activeTab, setActiveTab] = useState('analysis');
     const [useEmotions, setUseEmotions] = useState(false);
     const [useColors, setUseColors] = useState(false);
-    const [showBoundingBoxes, setShowBoundingBoxes] = useState(true);
+    const [showBoundingBoxes] = useState(true); // Always true, user can't change it
     const [geminiOutput, setGeminiOutput] = useState('');
     const canvasRef = useRef(null);
 
@@ -113,6 +131,7 @@ const Profile = () => {
         setSelectedPhoto({ id: photoId, url: photoUrl });
         setModalOpen(true);
         setGeminiOutput('');
+        setActiveTab('analysis');
 
         try {
             const response = await axios.post(`${URL}/api/vision`, {
@@ -134,7 +153,7 @@ const Profile = () => {
 
     // Function to draw image and bounding boxes on canvas
     const drawImageAndBoxes = () => {
-        if (!selectedPhoto || !selectedData || !canvasRef.current || !showBoundingBoxes) return;
+        if (!selectedPhoto || !selectedData || !canvasRef.current) return;
 
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
@@ -205,15 +224,19 @@ const Profile = () => {
         img.src = `${selectedPhoto.url}=w400`;
     };
 
-    // Effect to draw boxes when analysis results or showBoundingBoxes changes
+    // Effect to draw boxes when analysis results change
     useEffect(() => {
         drawImageAndBoxes();
-    }, [selectedData, showBoundingBoxes]);
+    }, [selectedData]);
 
     const handleGeminiRecipeRequest = async () => { // ✅ NEW FUNCTION
         if (!selectedData) return;
 
         try {
+            // Make sure the canvas has the censored image for display purposes
+            // but we'll use the original image URL for the API call to avoid SecurityError
+            drawImageAndBoxes();
+
             console.log('Sending request to Gemini API with data:', {
                 labels: selectedData.labels,
                 emotions: selectedData.emotions,
@@ -227,7 +250,8 @@ const Profile = () => {
                 emotions: selectedData.emotions,
                 colors: selectedData.colors,
                 useEmotions: useEmotions,
-                useColors: useColors
+                useColors: useColors,
+                imageUrl: selectedPhoto.url
             });
 
             console.log('Received response from Gemini API:', response.data);
@@ -298,29 +322,50 @@ const Profile = () => {
                     <>
                         <div style={{ display: 'flex', gap: '30px' }}>
                             <div>
-                                <canvas
-                                    ref={canvasRef}
+                                {/* Display original image */}
+                                <img 
+                                    src={`${selectedPhoto.url}=w400`}
+                                    alt="Selected Photo"
                                     style={{ width: '300px', borderRadius: '8px' }}
                                 />
-                                <div style={{ marginTop: '10px' }}>
-                                    <label>
-                                        <input
-                                            type="checkbox"
-                                            checked={showBoundingBoxes}
-                                            onChange={() => setShowBoundingBoxes(!showBoundingBoxes)}
-                                        />{' '}
-                                        Show Bounding Boxes
-                                    </label>
-                                </div>
+                                {/* Keep canvas for censored image but hide it */}
+                                <canvas
+                                    ref={canvasRef}
+                                    style={{ display: 'none' }}
+                                />
                             </div>
                             <div style={{ flex: 1 }}>
-                                <div>
-                                    <button onClick={() => setActiveTab('analysis')}>Analysis</button>
-                                    <button onClick={() => setActiveTab('restaurants')}>Restaurants</button>
-                                    <button onClick={() => setActiveTab('recipes')}>Recipe</button>
-                                </div>
-
-                                <hr />
+                                <ul className="nav nav-tabs mb-3">
+                                    <li className="nav-item">
+                                        <button 
+                                            className={`nav-link ${activeTab === 'analysis' ? 'active' : ''}`} 
+                                            onClick={() => setActiveTab('analysis')}
+                                        >
+                                            Analysis
+                                        </button>
+                                    </li>
+                                    <li className="nav-item">
+                                        <button 
+                                            className={`nav-link ${activeTab === 'restaurants' ? 'active' : ''}`} 
+                                            onClick={() => setActiveTab('restaurants')}
+                                        >
+                                            Restaurants
+                                        </button>
+                                    </li>
+                                    <li className="nav-item">
+                                        <button 
+                                            className={`nav-link ${activeTab === 'recipes' ? 'active' : ''}`} 
+                                            onClick={() => {
+                                                setActiveTab('recipes');
+                                                if (selectedData) {
+                                                    handleGeminiRecipeRequest();
+                                                }
+                                            }}
+                                        >
+                                            Recipe
+                                        </button>
+                                    </li>
+                                </ul>
                                 {activeTab === 'analysis' && selectedData && (
                                     <div>
                                         <h5>Checkbox Filters</h5>
@@ -390,11 +435,11 @@ const Profile = () => {
 
                                 {activeTab === 'recipes' && selectedData && (
                                     <div>
-                                        <h5>Recipe Suggestions</h5>
-                                        <button className="btn btn-success mb-3" onClick={handleGeminiRecipeRequest}>
-                                            Get Recipe
-                                        </button>
-                                        <div style={{ whiteSpace: 'pre-wrap' }}>{geminiOutput}</div>
+                                        <div 
+                                            className="markdown-content"
+                                            style={{ maxWidth: '100%', overflow: 'auto' }}
+                                            dangerouslySetInnerHTML={{ __html: markdownToHtml(geminiOutput) }}
+                                        />
                                     </div>
                                 )}
                             </div>

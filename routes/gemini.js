@@ -3,7 +3,7 @@ const router = express.Router();
 const path = require('path');
 const fs = require('fs');
 const axios = require('axios');
-const { VertexAI } = require('@google-cloud/vertexai');
+const { VertexAI, FileData } = require('@google-cloud/vertexai');
 
 
 const project = 'picplate-login-app';
@@ -34,7 +34,7 @@ if (fs.existsSync(keyFile)) {
 }
 
 router.post('/generate-recipe', async (req, res) => {
-    const { labels, emotions, colors, useEmotions, useColors } = req.body;
+    const { labels, emotions, colors, useEmotions, useColors, imageUrl } = req.body;
 
 
     if (!labels || !Array.isArray(labels)) {
@@ -67,12 +67,38 @@ router.post('/generate-recipe', async (req, res) => {
             prompt += ` The dominant colors in the photo are: ${hexColors.join(', ')}.`;
         }
 
-        prompt += `\nBased on the above information, suggest a personalized meal or dish.`;
+        prompt += `\nBased on the above information and the image, suggest a three course meal as if you were a chef at a 5 star restaurant. Give your response in markdown`;
 
+        // Parts array to hold both image and text
+        const parts = [];
 
+        // Add image to parts if imageUrl is provided
+        if (imageUrl) {
+            try {
+                // Fetch the image data
+                const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+                const imageBuffer = Buffer.from(imageResponse.data);
+
+                // Add image to parts
+                parts.push({
+                    inlineData: {
+                        data: imageBuffer.toString('base64'),
+                        mimeType: 'image/jpeg' // Assuming JPEG format, adjust if needed
+                    }
+                });
+
+                console.log('✅ Image successfully added to prompt');
+            } catch (imageError) {
+                console.error('❌ Error fetching image:', imageError);
+                // Continue without image if there's an error
+            }
+        }
+
+        // Add text prompt to parts
+        parts.push({ text: prompt });
 
         const result = await model.generateContent({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }]
+            contents: [{ role: 'user', parts: parts }]
         });
 
         const response = await result.response;
