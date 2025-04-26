@@ -13,6 +13,7 @@ var photosRouter = require('./routes/photos');
 var authRouter = require('./routes/auth');
 var visionRouter = require('./routes/vision');
 var geminiRouter = require('./routes/gemini');
+var historyRouter = require('./routes/history');
 
 const cors = require('cors');
 
@@ -48,6 +49,7 @@ app.use('/api/photos', photosRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/vision', visionRouter);
 app.use('/api/gemini', geminiRouter);
+app.use('/api/history', historyRouter);
 
 // Serve React build from "picplate-frontend/build" - this should come AFTER API routes
 app.use(express.static(path.join(__dirname, 'picplate-frontend/build')));

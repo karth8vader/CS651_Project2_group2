@@ -3,7 +3,6 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
-const axios = require('axios');
 const { VertexAI } = require('@google-cloud/vertexai');
 
 const project = 'picplate-login-app';
@@ -11,7 +10,6 @@ const location = 'us-central1';
 
 let vertexAI;
 let recipeModel;
-let imageModel;
 
 const keyFile = path.join(__dirname, '../gemini-key.json');
 
@@ -19,14 +17,14 @@ if (fs.existsSync(keyFile)) {
     try {
         vertexAI = new VertexAI({ project, location, keyFilename: keyFile });
         recipeModel = vertexAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-        imageModel = vertexAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     } catch (error) {
-        console.error('❌ Error initializing VertexAI or models:', error);
+        console.error('❌ Error initializing VertexAI model:', error);
     }
 } else {
     console.error('❌ Service account key file not found at:', keyFile);
 }
 
+// 🚀 Only recipe generation now
 router.post('/generate-recipe', async (req, res) => {
     const { labels, emotions, colors, useEmotions, useColors, imageUrl } = req.body;
 
@@ -34,9 +32,9 @@ router.post('/generate-recipe', async (req, res) => {
         return res.status(400).json({ error: 'Labels are required for generation.' });
     }
 
-    if (!recipeModel || !imageModel) {
+    if (!recipeModel) {
         return res.status(500).json({
-            error: 'Gemini or Imagen model not available. Please check server logs for details.',
+            error: 'Gemini model not available. Please check server logs for details.',
             details: 'Model initialization failed.'
         });
     }
@@ -65,24 +63,7 @@ router.post('/generate-recipe', async (req, res) => {
         const recipeResponse = await recipeResult.response;
         const recipeText = recipeResponse?.candidates?.[0]?.content?.parts?.[0]?.text || 'No recipe generated.';
 
-        // Extract main course name from recipeText for image prompt
-        const mainCourseMatch = recipeText.match(/Main Course:\s*(.+)/i);
-        const mainCourseName = mainCourseMatch ? mainCourseMatch[1].split('\n')[0] : 'Tropical Dish';
-
-
-        const imagePrompt = `Please generate the image of dish called "${mainCourseName}".`;
-
-        const imageResult = await imageModel.generateContent({
-            contents: [{ role: 'user', parts: [{ text: imagePrompt }] }],
-            generationConfig: { temperature: 0.8, maxOutputTokens: 1024 }
-        });
-
-        const imageResponse = await imageResult.response;
-        const imagePart = imageResponse?.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-
-        const imageBase64 = imagePart ? `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}` : null;
-
-        res.json({ recipe: recipeText, image: imageBase64 });
+        res.json({ recipe: recipeText }); // 🚀 Only recipe returned
     } catch (err) {
         console.error('❌ Gemini API error:', err);
         res.status(500).json({
@@ -92,6 +73,7 @@ router.post('/generate-recipe', async (req, res) => {
     }
 });
 
+// 🚀 No changes to /generate-restaurants, keep it same
 router.post('/generate-restaurants', async (req, res) => {
     const { dishName, userLocation } = req.body;
 
