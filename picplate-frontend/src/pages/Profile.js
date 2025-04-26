@@ -33,11 +33,24 @@ const Profile = () => {
     const [activeTab, setActiveTab] = useState('analysis');
     const [useEmotions, setUseEmotions] = useState(false);
     const [useColors, setUseColors] = useState(false);
+    const [userLocation, setUserLocation] = useState('');
     const [showBoundingBoxes] = useState(true); // Always true, user can't change it
     const [geminiOutput, setGeminiOutput] = useState('');
+    const [isLoadingRecipe, setIsLoadingRecipe] = useState(false);
+    const [restaurantOutput, setRestaurantOutput] = useState('');
+    const [isLoadingRestaurants, setIsLoadingRestaurants] = useState(false);
+    const [hasGeneratedRecipe, setHasGeneratedRecipe] = useState(false);
+    const [hasGeneratedRestaurants, setHasGeneratedRestaurants] = useState(false);
+    const [geminiImage, setGeminiImage] = useState('');
+
     const canvasRef = useRef(null);
 
     const URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
+    const extractDishName = (markdown) => {
+        const match = markdown.match(/Main Course:\s*(.+)/i);
+        return match ? match[1].split('\n')[0] : '';
+    };
 
     // CSS for hover effect
     const styles = {
@@ -109,7 +122,6 @@ const Profile = () => {
                 setPhotos(response.data.photos || []);
             } catch (err) {
                 console.error('Failed to fetch photos:', err);
-                console.log('🔐 Using accessToken:', token);
                 setError('Failed to load Google Photos.');
             }
         };
@@ -131,6 +143,10 @@ const Profile = () => {
         setSelectedPhoto({ id: photoId, url: photoUrl });
         setModalOpen(true);
         setGeminiOutput('');
+        setGeminiImage('');
+        setHasGeneratedRecipe(false);
+        setHasGeneratedRestaurants(false);
+        setRestaurantOutput('');
         setActiveTab('analysis');
 
         try {
@@ -229,10 +245,19 @@ const Profile = () => {
         drawImageAndBoxes();
     }, [selectedData]);
 
+    useEffect(() => {
+        if (activeTab === 'restaurants' && geminiOutput && userLocation && !hasGeneratedRestaurants) {
+            handleGeminiRestaurantRequest();
+        }
+    }, [userLocation]);
+
     const handleGeminiRecipeRequest = async () => { // ✅ NEW FUNCTION
-        if (!selectedData) return;
+        if (!selectedData || hasGeneratedRecipe) return;
+
+        setIsLoadingRecipe(true);
 
         try {
+
             // Make sure the canvas has the censored image for display purposes
             // but we'll use the original image URL for the API call to avoid SecurityError
             drawImageAndBoxes();
@@ -256,6 +281,8 @@ const Profile = () => {
 
             console.log('Received response from Gemini API:', response.data);
             setGeminiOutput(response.data.recipe || 'No response from Gemini.');
+            setGeminiImage(response.data.image || '');
+            setHasGeneratedRecipe(true);
         } catch (err) {
             console.error('Gemini API error:', err);
             console.error('Error details:', {
@@ -274,8 +301,42 @@ const Profile = () => {
             }
 
             setGeminiOutput(errorMessage);
+        } finally {
+            setIsLoadingRecipe(false);
         }
     };
+
+
+    const handleGeminiRestaurantRequest = async () => {
+        if (!geminiOutput || !userLocation || hasGeneratedRestaurants) return;
+
+        setIsLoadingRestaurants(true);
+
+        try {
+            setIsLoadingRestaurants(true);
+            setRestaurantOutput(''); // Clear previous output
+
+            const response = await axios.post(`${URL}/api/gemini/generate-restaurants`, {
+                dishName: extractDishName(geminiOutput),
+                userLocation: userLocation
+            });
+
+            setRestaurantOutput(response.data.restaurants || 'No restaurant suggestions received.');
+            setHasGeneratedRestaurants(true);
+        } catch (err) {
+            let errorMessage = 'Failed to get restaurant suggestions.';
+            if (err.response?.data?.error) {
+                errorMessage += ` Error: ${err.response.data.error}`;
+            } else {
+                errorMessage += ` Error: ${err.message}`;
+            }
+            setRestaurantOutput(errorMessage);
+        } finally {
+            setIsLoadingRestaurants(false);
+        }
+    };
+
+
 
     return (
         <div>
@@ -323,7 +384,7 @@ const Profile = () => {
                         <div style={{ display: 'flex', gap: '30px' }}>
                             <div>
                                 {/* Display original image */}
-                                <img 
+                                <img
                                     src={`${selectedPhoto.url}=w400`}
                                     alt="Selected Photo"
                                     style={{ width: '300px', borderRadius: '8px' }}
@@ -337,24 +398,16 @@ const Profile = () => {
                             <div style={{ flex: 1 }}>
                                 <ul className="nav nav-tabs mb-3">
                                     <li className="nav-item">
-                                        <button 
-                                            className={`nav-link ${activeTab === 'analysis' ? 'active' : ''}`} 
+                                        <button
+                                            className={`nav-link ${activeTab === 'analysis' ? 'active' : ''}`}
                                             onClick={() => setActiveTab('analysis')}
                                         >
                                             Analysis
                                         </button>
                                     </li>
                                     <li className="nav-item">
-                                        <button 
-                                            className={`nav-link ${activeTab === 'restaurants' ? 'active' : ''}`} 
-                                            onClick={() => setActiveTab('restaurants')}
-                                        >
-                                            Restaurants
-                                        </button>
-                                    </li>
-                                    <li className="nav-item">
-                                        <button 
-                                            className={`nav-link ${activeTab === 'recipes' ? 'active' : ''}`} 
+                                        <button
+                                            className={`nav-link ${activeTab === 'recipes' ? 'active' : ''}`}
                                             onClick={() => {
                                                 setActiveTab('recipes');
                                                 if (selectedData) {
@@ -363,6 +416,19 @@ const Profile = () => {
                                             }}
                                         >
                                             Recipe
+                                        </button>
+                                    </li>
+                                    <li className="nav-item">
+                                        <button
+                                            className={`nav-link ${activeTab === 'restaurants' ? 'active' : ''}`}
+                                            onClick={() => {
+                                                setActiveTab('restaurants');
+                                                if (!hasGeneratedRestaurants) {
+                                                    handleGeminiRestaurantRequest();
+                                                }
+                                            }}
+                                        >
+                                            Restaurants
                                         </button>
                                     </li>
                                 </ul>
@@ -429,17 +495,60 @@ const Profile = () => {
 
                                 {activeTab === 'restaurants' && (
                                     <div>
-                                        <h5>Restaurants Tab (To be implemented)</h5>
+                                        <h5>Restaurant Suggestions</h5>
+                                        <label htmlFor="locationInput">Enter Location (Zip code):</label>
+                                        <input
+                                            id="locationInput"
+                                            type="text"
+                                            value={userLocation}
+                                            onChange={(e) => setUserLocation(e.target.value)}
+                                            placeholder="e.g., 94107"
+                                            style={{
+                                                width: '100%',
+                                                padding: '8px',
+                                                borderRadius: '6px',
+                                                border: '1px solid #ccc',
+                                                marginTop: '8px',
+                                                marginBottom: '16px'
+                                            }}
+                                        />
+                                        {isLoadingRestaurants ? (
+                                            <p>⏳ Fetching restaurant suggestions from Gemini...</p>
+                                        ) : (
+                                            <div
+                                                className="markdown-content"
+                                                dangerouslySetInnerHTML={{ __html: markdownToHtml(restaurantOutput) }}
+                                            />
+                                        )}
                                     </div>
                                 )}
 
-                                {activeTab === 'recipes' && selectedData && (
-                                    <div>
-                                        <div 
-                                            className="markdown-content"
-                                            style={{ maxWidth: '100%', overflow: 'auto' }}
-                                            dangerouslySetInnerHTML={{ __html: markdownToHtml(geminiOutput) }}
-                                        />
+
+
+                                {activeTab === 'recipes' && (
+                                    <div style={{ textAlign: 'center' }}>
+                                        {isLoadingRecipe ? (
+                                            <p>🍳 Cooking up your recipe…</p>
+                                        ) : (
+                                            <>
+                                                {geminiImage && (
+                                                    <img
+                                                        src={geminiImage}
+                                                        alt="Generated Dish"
+                                                        style={{ maxWidth: '300px', borderRadius: '8px', marginBottom: '20px' }}
+                                                    />
+                                                )}
+                                                <div
+                                                    className="markdown-content"
+                                                    style={{
+                                                        maxHeight: '400px',
+                                                        overflowY: 'auto',
+                                                        paddingRight: '10px'
+                                                    }}
+                                                    dangerouslySetInnerHTML={{ __html: markdownToHtml(geminiOutput) }}
+                                                />
+                                            </>
+                                        )}
                                     </div>
                                 )}
                             </div>
