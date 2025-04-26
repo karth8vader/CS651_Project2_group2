@@ -53,7 +53,7 @@ router.post('/generate-recipe', async (req, res) => {
             recipePrompt += `\n- Colors: ${hexColors.join(', ')}`;
         }
 
-        recipePrompt += `\nSuggest a tropical 3-course meal. Focus only on one main course recipe (with ingredients and steps), and give short summaries for appetizer and dessert.`;
+        recipePrompt += `\nSuggest a 3-course meal. Focus only on one main course recipe (with ingredients and steps), and give short summaries for appetizer and dessert.`;
 
         const recipeResult = await recipeModel.generateContent({
             contents: [{ role: 'user', parts: [{ text: recipePrompt }] }],
