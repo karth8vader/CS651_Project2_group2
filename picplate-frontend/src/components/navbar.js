@@ -6,7 +6,8 @@ import picplateLogo from '../assets/images/picplate-logo.svg';
 const Navbar = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const user = JSON.parse(localStorage.getItem('user'));
+    const userString = localStorage.getItem('user');
+    const user = userString ? JSON.parse(userString) : null;
 
     const handleLogout = () => {
         localStorage.removeItem('user');
@@ -15,11 +16,10 @@ const Navbar = () => {
         navigate('/login');
     };
 
-    const isProfilePage = location.pathname === '/profile';
 
     return (
         <header role="banner">
-            <nav className="navbar navbar-expand-md navbar-dark bg-dark">
+            <nav className="navbar navbar-expand-md navbar-dark bg-custom-brown">
                 <div className="container position-relative">
                     <Link className="navbar-brand d-flex align-items-center mx-auto" to="/">
                         <img
@@ -35,8 +35,8 @@ const Navbar = () => {
                         className="navbar-toggler position-absolute"
                         style={{ right: '10px' }}
                         type="button"
-                        data-toggle="collapse"
-                        data-target="#navbarsPicPlate"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#navbarsPicPlate"
                         aria-controls="navbarsPicPlate"
                         aria-expanded="false"
                         aria-label="Toggle navigation"
@@ -46,16 +46,18 @@ const Navbar = () => {
 
                     <div className="collapse navbar-collapse justify-content-end" id="navbarsPicPlate">
                         <ul className="navbar-nav">
-                            <li className="nav-item">
-                                <Link className="nav-link" to="/home">Home</Link>
-                            </li>
-                            {isProfilePage && user && (
+                            {!user && (
+                                <li className="nav-item">
+                                    <button className="btn btn-turquoise rounded-pill ms-2" onClick={() => navigate('/login')}>Login</button>
+                                </li>
+                            )}
+                            {user && (
                                 <>
                                     <li className="nav-item nav-user">
-                                        <span className="nav-link text-white">Hello {user.name || user.given_name}</span>
+                                        <span className="nav-link text-white" onClick={() => navigate('/profile')} style={{ cursor: 'pointer' }}>Hello {user.name || user.given_name}</span>
                                     </li>
                                     <li className="nav-item">
-                                        <button className="btn btn-outline-light ml-2" onClick={handleLogout}>Logout</button>
+                                        <button className="btn btn-turquoise rounded-pill ms-2" onClick={handleLogout}>Logout</button>
                                     </li>
                                 </>
                             )}

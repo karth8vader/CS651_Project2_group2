@@ -1,10 +1,27 @@
 /* Navbar.css */
 
+/* Custom navbar background color */
+.bg-custom-brown {
+    background-color: #8B4513 !important; /* Warm brown color that complements cream */
+}
+
+/* Custom turquoise button */
+.btn-turquoise {
+    background-color: #40E0D0 !important; /* Light turquoise */
+    border-color: #40E0D0 !important;
+    color: #333 !important; /* Dark text for better contrast */
+}
+
+.btn-turquoise:hover {
+    background-color: #30D0C0 !important; /* Slightly darker on hover */
+    border-color: #30D0C0 !important;
+}
+
 
 
 /* Centered brand uses DM Serif Display for a gourmet-like style */
 .navbar-brand {
-    font-family: 'DM Serif Display', serif;
+    font-family: 'Open Sans', sans-serif;
     font-size: 26px;
     color: #fff !important;
     text-decoration: none;
