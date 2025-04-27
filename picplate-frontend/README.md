@@ -1,70 +1,126 @@
-# Getting Started with Create React App
+# PicPlate 🍽️ | AI-Powered Mood-Based Food & Restaurant Recommender
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+PicPlate is an AI-powered web application that suggests personalized **recipes** and **restaurant recommendations** based on **your mood** detected from your Google Photos.
+
+This project has two parts:
+
+- **Frontend:** React app (`picplate-frontend` folder)
+- **Backend:** Node.js + Express app (entry point: `bin/www`)
+
+---
+
+## Quick Setup
+
+```bash
+# Clone the repository
+# Install frontend and backend dependencies
+# Run both servers
+```
+
+---
 
 ## Available Scripts
 
-In the project directory, you can run:
+### 1. Frontend (React App)
 
-### `npm start`
+Navigate to the frontend directory:
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+```bash
+cd picplate-frontend
+```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+Install frontend dependencies:
 
-### `npm test`
+```bash
+npm install
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Start the frontend server:
 
-### `npm run build`
+```bash
+npm start
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Frontend runs at: [http://localhost:3000](http://localhost:3000)
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+---
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### 2. Backend (Node.js Express API)
 
-### `npm run eject`
+At the backend directory or root (where your `bin/www` entry point exists), install backend dependencies:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```bash
+npm install
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Start the backend server:
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```bash
+npm run dev
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+Backend runs at: [http://localhost:3001](http://localhost:3001)
+
+The backend handles:
+
+- Google Vision API integration for image analysis
+- Google Gemini API for recipe and restaurant suggestions
+- Firestore database to save user history
+
+---
+
+## Project Structure
+
+```plaintext
+picplate-frontend/  # React frontend app
+backend/            # Node.js Express backend (bin/www entry point)
+```
+
+---
+
+## Deployment Notes
+
+- Environment variables (e.g., API URLs, Firestore credentials) must be set properly for production.
+- Handle **CORS** correctly between frontend and backend (different ports).
+- To build the frontend for production:
+
+```bash
+cd picplate-frontend
+npm run build
+```
+
+This generates an optimized `build/` folder ready for deployment.
+
+---
 
 ## Learn More
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+- [React Documentation](https://react.dev/)
+- [Node.js Documentation](https://nodejs.org/en/docs/)
+- [Express Documentation](https://expressjs.com/)
+- [Google Cloud Vision API](https://cloud.google.com/vision)
+- [Google Gemini API (Vertex AI)](https://cloud.google.com/vertex-ai/docs/generative-ai/learn/overview)
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+---
 
-### Code Splitting
+## Useful Commands
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+| Command                    | Purpose                                |
+| -------------------------- | -------------------------------------- |
+| `npm start` (frontend)     | Start React development server         |
+| `npm run dev` (backend)    | Start backend server using nodemon     |
+| `npm run build` (frontend) | Create production-ready frontend build |
+| `npm install`              | Install project dependencies           |
 
-### Analyzing the Bundle Size
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## Contact
 
-### Making a Progressive Web App
+If you encounter any issues or have feedback, feel free to contact:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+**Email:** [abhate@horizon.csueastbay.edu](mailto\:abhate@horizon.csueastbay.edu)
 
-### Advanced Configuration
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+# 🚀 Happy Cooking with PicPlate!
 
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
