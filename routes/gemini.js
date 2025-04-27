@@ -34,7 +34,7 @@ if (fs.existsSync(keyFile)) {
 
 // 🚀 Only recipe generation now
 router.post('/generate-recipe', async (req, res) => {
-    const { labels, emotions, colors, useEmotions, useColors, imageUrl } = req.body;
+    const { labels, emotions, colors, useEmotions, useColors, imageUrl, temperature } = req.body;
 
     if (!labels || !Array.isArray(labels)) {
         return res.status(400).json({ error: 'Labels are required for generation.' });
@@ -50,7 +50,7 @@ router.post('/generate-recipe', async (req, res) => {
     try {
         const labelTexts = labels.map(l => typeof l === 'string' ? l : l.description || JSON.stringify(l));
 
-        let recipePrompt = `You are a creative 5-star chef. Based on the following context:
+        let recipePrompt = `You are a creative home cook. Based on the following context:
 - Labels: ${labelTexts.join(', ')}`;
 
         if (useEmotions && emotions?.length > 0) {
@@ -61,11 +61,17 @@ router.post('/generate-recipe', async (req, res) => {
             recipePrompt += `\n- Colors: ${hexColors.join(', ')}`;
         }
 
-        recipePrompt += `\nSuggest a 3-course meal. Focus only on one main course recipe (with ingredients and steps), and give short summaries for appetizer and dessert.`;
+        recipePrompt += `\nSuggest a main course meal. The response should be structured in the style of a recipe. Start with a creative title for the meal. Then give a brief description of the meal and how it relates to the provided context. Then give the ingredients and step for making the main dish, finally give brief suggestions for an appetizer, side, and dessert.  Use markdown.`;
+
+        // Log the prompt being sent to Gemini
+        console.log('🔍 Sending recipe prompt to Gemini:', recipePrompt);
 
         const recipeResult = await recipeModel.generateContent({
             contents: [{ role: 'user', parts: [{ text: recipePrompt }] }],
-            generationConfig: { temperature: 1.0, maxOutputTokens: 2048 }
+            generationConfig: { 
+                temperature: temperature || 1.0, 
+                maxOutputTokens: 2048 
+            }
         });
 
         const recipeResponse = await recipeResult.response;
@@ -98,6 +104,9 @@ router.post('/generate-restaurants', async (req, res) => {
 
     try {
         const prompt = `Suggest 3 restaurants in the zip code ${userLocation} that serve food like this: "${dishName.replace(/[#>*`\-]/g, '').slice(0, 400)}".\nEach suggestion should be:\n- **Restaurant Name**\n- One sentence summary why it's a match\n- Include website link if available.\nUse markdown.`;
+
+        // Log the prompt being sent to Gemini
+        console.log('🔍 Sending restaurant prompt to Gemini:', prompt);
 
         const result = await recipeModel.generateContent({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -135,6 +144,9 @@ router.post('/generate-images', async (req, res) => {
     try {
         // Create a prompt for food image generation based on the recipe
         const prompt = `Create a beautiful, appetizing food photograph of a dish based on this recipe: ${recipeText.substring(0, 500)}. Make it look professional, well-lit, and mouth-watering.`;
+
+        // Log the prompt being sent to Gemini
+        console.log('🔍 Sending image generation prompt to Gemini:', prompt);
 
         // Generate 4 images using the new method
         const response = await genAI.models.generateImages({

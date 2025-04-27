@@ -24,7 +24,7 @@ const Home = () => {
             <Navbar />
 
             {/* Hero Section with Logo */}
-            <div className="hero-section">
+            <div className="hero-section" style={{ paddingTop: '80px' }}>
                 <div className="container">
                     <div className="row align-items-center py-5">
                         <div className="col-md-6 text-center text-md-end mb-4 mb-md-0">

@@ -34,6 +34,7 @@ const Profile = () => {
     const [selectedPhoto, setSelectedPhoto] = useState(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('photos');
+    const [modalActiveTab, setModalActiveTab] = useState('analysis');
     const [useEmotions, setUseEmotions] = useState(false);
     const [useColors, setUseColors] = useState(false);
     const [userLocation, setUserLocation] = useState('');
@@ -52,6 +53,7 @@ const Profile = () => {
     const [generatedImages, setGeneratedImages] = useState([]);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isGeneratingImages, setIsGeneratingImages] = useState(false);
+    const [temperature, setTemperature] = useState(1.0);
 
     // Function to refresh user email from localStorage
     const refreshUserEmail = () => {
@@ -192,12 +194,13 @@ const Profile = () => {
 
         setSelectedPhoto({ id: photoId, url: photoUrl });
         setModalOpen(true);
+        setModalActiveTab('analysis');
         setGeminiOutput('');
         setGeminiImage('');
         setHasGeneratedRecipe(false);
         setHasGeneratedRestaurants(false);
         setRestaurantOutput('');
-        setActiveTab('analysis');
+        setTemperature(1.0); // Reset temperature to 1.0
 
         try {
             const response = await axios.post(`${URL}/api/vision`, {
@@ -301,8 +304,11 @@ const Profile = () => {
         }
     }, [userLocation]);
 
-    const handleGeminiRecipeRequest = async () => { // ✅ NEW FUNCTION
-        if (!selectedData || hasGeneratedRecipe) return;
+    const handleGeminiRecipeRequest = async (regenerate = false) => { // ✅ NEW FUNCTION
+        if (!selectedData) return;
+
+        // If regenerate is false and we already have a recipe, don't generate again
+        if (!regenerate && hasGeneratedRecipe) return;
 
         setIsLoadingRecipe(true);
 
@@ -320,7 +326,8 @@ const Profile = () => {
                 colors: selectedData.colors,
                 useEmotions: useEmotions,
                 useColors: useColors,
-                imageUrl: selectedPhoto.url
+                imageUrl: selectedPhoto.url,
+                temperature: temperature // Add temperature parameter
             });
 
             console.log('Received response from Gemini API:', response.data);
@@ -542,6 +549,7 @@ const Profile = () => {
             console.log('Save history response:', response.data);
             toast.success('Saved successfully!', { position: 'top-center' });
             setModalOpen(false);
+            setTemperature(1.0); // Reset temperature when modal is closed
             setActiveTab('photos');
 
             fetchHistoryEntries();
@@ -608,11 +616,17 @@ const Profile = () => {
         <div>
             <Navbar />
             <ToastContainer />
-            <div className="container mt-4">
-                <ul className="nav nav-tabs">
+            <div className="container mt-5" style={{ paddingTop: '20px', maxHeight: 'calc(100vh - 100px)', overflowY: 'auto' }}>
+                <ul className="nav nav-pills">
                     <li className="nav-item">
                         <button
                             className={`nav-link ${activeTab === 'photos' ? 'active' : ''}`}
+                            style={{
+                                backgroundColor: activeTab === 'photos' ? '#40E0D0' : '#CD5700',
+                                color: 'white',
+                                borderRadius: '50px',
+                                margin: '0 5px'
+                            }}
                             onClick={() => setActiveTab('photos')}
                         >
                             Google Photos
@@ -621,6 +635,12 @@ const Profile = () => {
                     <li className="nav-item">
                         <button
                             className={`nav-link ${activeTab === 'history' ? 'active' : ''}`}
+                            style={{
+                                backgroundColor: activeTab === 'history' ? '#40E0D0' : '#CD5700',
+                                color: 'white',
+                                borderRadius: '50px',
+                                margin: '0 5px'
+                            }}
                             onClick={() => { 
                                 setActiveTab('history'); 
                                 refreshUserEmail(); // Refresh email before fetching history
@@ -650,7 +670,7 @@ const Profile = () => {
                                         style={{ width: '100%', borderRadius: '8px' }}
                                     />
                                     <div style={styles.hoverOverlay} className="hover-overlay">
-                                        <span style={styles.analyzeText}>Analyze</span>
+                                        <span style={styles.analyzeText}>Platify!</span>
                                     </div>
                                 </div>
                             </div>
@@ -771,13 +791,18 @@ const Profile = () => {
             {/* Modal */}
             <Modal
                 isOpen={modalOpen}
-                onRequestClose={() => setModalOpen(false)}
                 contentLabel="Vision Analysis"
                 style={{
+                    overlay: {
+                        paddingTop: '80px',
+                        overflow: 'auto'
+                    },
                     content: {
                         maxWidth: '900px',
-                        margin: 'auto',
-                        padding: '30px'
+                        maxHeight: '80vh',
+                        margin: '80px auto auto',
+                        padding: '30px',
+                        overflow: 'auto'
                     }
                 }}
             >
@@ -798,26 +823,81 @@ const Profile = () => {
                                 />
                             </div>
                             <div style={{ flex: 1 }}>
-                                <ul className="nav nav-tabs mb-3">
+                                <ul className="nav nav-pills mb-3">
                                     <li className="nav-item">
-                                        <button className={`nav-link ${activeTab === 'analysis' ? 'active' : ''}`} onClick={() => setActiveTab('analysis')}>Analysis</button>
+                                        <button 
+                                            className={`nav-link ${modalActiveTab === 'analysis' ? 'active' : ''}`} 
+                                            style={{
+                                                backgroundColor: modalActiveTab === 'analysis' ? '#40E0D0' : '#CD5700',
+                                                color: 'white',
+                                                borderRadius: '50px',
+                                                margin: '0 5px'
+                                            }}
+                                            onClick={() => setModalActiveTab('analysis')}
+                                        >
+                                            Analysis
+                                        </button>
                                     </li>
                                     <li className="nav-item">
-                                        <button className={`nav-link ${activeTab === 'recipes' ? 'active' : ''}`} onClick={() => { setActiveTab('recipes'); if (selectedData) handleGeminiRecipeRequest(); }}>Recipe</button>
+                                        <button 
+                                            className={`nav-link ${modalActiveTab === 'recipes' ? 'active' : ''}`} 
+                                            style={{
+                                                backgroundColor: modalActiveTab === 'recipes' ? '#40E0D0' : '#CD5700',
+                                                color: 'white',
+                                                borderRadius: '50px',
+                                                margin: '0 5px'
+                                            }}
+                                            onClick={() => { setModalActiveTab('recipes'); if (selectedData) handleGeminiRecipeRequest(); }}
+                                        >
+                                            Recipe
+                                        </button>
                                     </li>
-                                    <button
-                                        className={`nav-link ${activeTab === 'restaurants' ? 'active' : ''}`}
-                                        onClick={() => {
-                                            setActiveTab('restaurants');
-                                            if (geminiOutput && userLocation && /^\d{5}$/.test(userLocation)) {
-                                                handleGeminiRestaurantRequest();
-                                            }
-                                        }}
-                                    >
-                                        Restaurants
-                                    </button>
+                                    <li className="nav-item">
+                                        <button
+                                            className={`nav-link ${modalActiveTab === 'restaurants' ? 'active' : ''}`}
+                                            style={{
+                                                backgroundColor: modalActiveTab === 'restaurants' ? '#40E0D0' : '#CD5700',
+                                                color: 'white',
+                                                borderRadius: '50px',
+                                                margin: '0 5px'
+                                            }}
+                                            onClick={() => {
+                                                setModalActiveTab('restaurants');
+                                                if (geminiOutput && userLocation && /^\d{5}$/.test(userLocation)) {
+                                                    handleGeminiRestaurantRequest();
+                                                }
+                                            }}
+                                        >
+                                            Restaurants
+                                        </button>
+                                    </li>
+                                    <li className="nav-item ml-auto" style={{ marginLeft: 'auto' }}>
+                                        <button
+                                            className="nav-link"
+                                            style={{
+                                                backgroundColor: '#008080',
+                                                color: 'white',
+                                                borderRadius: '50px',
+                                                margin: '0 5px',
+                                                fontWeight: 'bold',
+                                                fontSize: '18px',
+                                                width: '40px',
+                                                height: '40px',
+                                                display: 'flex',
+                                                justifyContent: 'center',
+                                                alignItems: 'center',
+                                                padding: '0'
+                                            }}
+                                            onClick={() => {
+                                                setModalOpen(false);
+                                                setTemperature(1.0); // Reset temperature when modal is closed
+                                            }}
+                                        >
+                                            X
+                                        </button>
+                                    </li>
                                 </ul>
-                                {activeTab === 'analysis' && selectedData && (
+                                {modalActiveTab === 'analysis' && selectedData && (
                                     <div>
                                         <h5>Checkbox Filters</h5>
                                         <label>
@@ -878,7 +958,7 @@ const Profile = () => {
                                     </div>
                                 )}
 
-                                {activeTab === 'restaurants' && (
+                                {modalActiveTab === 'restaurants' && (
                                     <div>
                                         <h5>Restaurant Suggestions</h5>
                                         <form onSubmit={handleGeminiRestaurantRequest}>
@@ -915,30 +995,60 @@ const Profile = () => {
 
 
 
-                                {activeTab === 'recipes' && (
-                                    <div style={{ textAlign: 'center' }}>
+                                {modalActiveTab === 'recipes' && (
+                                    <div style={{ textAlign: 'left', width: '100%' }}>
                                         {isLoadingRecipe ? (
                                             <p>🍳 Cooking up your recipe…</p>
                                         ) : (
                                             <>
-                                                {geminiImage && (
-                                                    <img
-                                                        src={geminiImage}
-                                                        alt="Generated Dish"
-                                                        style={{ maxWidth: '300px', borderRadius: '8px', marginBottom: '20px' }}
+                                                {/* Recipe Content */}
+                                                <div style={{ width: '100%' }}>
+                                                    {geminiImage && (
+                                                        <img
+                                                            src={geminiImage}
+                                                            alt="Generated Dish"
+                                                            style={{ maxWidth: '300px', borderRadius: '8px', marginBottom: '20px' }}
+                                                        />
+                                                    )}
+                                                    <div
+                                                        className="markdown-content"
+                                                        style={{
+                                                            maxHeight: '400px',
+                                                            overflowY: 'auto',
+                                                            paddingRight: '10px',
+                                                            width: '100%',
+                                                            boxSizing: 'border-box'
+                                                        }}
+                                                        dangerouslySetInnerHTML={{ __html: markdownToHtml(geminiOutput) }}
                                                     />
-                                                )}
-                                                <div
-                                                    className="markdown-content"
-                                                    style={{
-                                                        maxHeight: '400px',
-                                                        overflowY: 'auto',
-                                                        paddingRight: '10px'
-                                                    }}
-                                                    dangerouslySetInnerHTML={{ __html: markdownToHtml(geminiOutput) }}
-                                                />
 
-                                                {/* Image Generation Tile */}
+                                                    {/* Regenerate Button */}
+                                                    <div style={{ marginTop: '15px', marginBottom: '15px', display: 'flex', justifyContent: 'flex-end' }}>
+                                                        <button
+                                                            className="nav-link"
+                                                            style={{
+                                                                backgroundColor: '#40E0D0',
+                                                                color: 'white',
+                                                                borderRadius: '50px',
+                                                                padding: '8px 20px',
+                                                                border: 'none',
+                                                                cursor: 'pointer',
+                                                                fontWeight: 'bold'
+                                                            }}
+                                                            onClick={() => {
+                                                                // Increase temperature by 0.2, max 2.0
+                                                                const newTemp = Math.min(temperature + 0.2, 2.0);
+                                                                setTemperature(newTemp);
+                                                                // Call handleGeminiRecipeRequest with regenerate=true
+                                                                handleGeminiRecipeRequest(true);
+                                                            }}
+                                                        >
+                                                            Regenerate Recipe
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {/* Image Generation Tile - Moved outside the recipe content div */}
                                                 {geminiOutput && !isLoadingRecipe && (
                                                     <div 
                                                         style={{ 
@@ -946,14 +1056,25 @@ const Profile = () => {
                                                             border: '1px solid #ddd',
                                                             borderRadius: '8px',
                                                             padding: '15px',
-                                                            backgroundColor: '#f9f9f9'
+                                                            backgroundColor: '#f9f9f9',
+                                                            width: '100%',
+                                                            boxSizing: 'border-box',
+                                                            textAlign: 'center'
                                                         }}
                                                     >
                                                         <h5>Generate Images for this Recipe</h5>
 
                                                         {generatedImages.length === 0 ? (
                                                             <button 
-                                                                className="btn btn-primary" 
+                                                                style={{
+                                                                    backgroundColor: '#D35400', /* Burnt orange color */
+                                                                    color: 'white',
+                                                                    borderRadius: '50px', /* Pill shape */
+                                                                    padding: '8px 20px',
+                                                                    border: 'none',
+                                                                    cursor: 'pointer',
+                                                                    fontWeight: 'bold'
+                                                                }}
                                                                 onClick={handleGenerateImages}
                                                                 disabled={isGeneratingImages}
                                                             >
@@ -965,7 +1086,6 @@ const Profile = () => {
                                                                 <div style={{ 
                                                                     position: 'relative',
                                                                     width: '100%',
-                                                                    maxWidth: '400px',
                                                                     margin: '0 auto',
                                                                     height: '300px',
                                                                     backgroundColor: '#eee',
@@ -1001,17 +1121,17 @@ const Profile = () => {
                                                                         display: 'flex',
                                                                         justifyContent: 'space-between',
                                                                         alignItems: 'center',
-                                                                        padding: '0 10px'
+                                                                        padding: '0'
                                                                     }}>
                                                                         <button 
                                                                             onClick={() => setCurrentImageIndex(prev => (prev === 0 ? generatedImages.length - 1 : prev - 1))}
                                                                             style={{
-                                                                                background: 'rgba(0,0,0,0.5)',
+                                                                                background: '#f8a26a', /* Burnt orange color */
                                                                                 color: 'white',
                                                                                 border: 'none',
-                                                                                borderRadius: '50%',
-                                                                                width: '40px',
-                                                                                height: '40px',
+                                                                                borderRadius: '4px', /* Bar style */
+                                                                                width: '80px',
+                                                                                height: '100%', /* Fill the entire height */
                                                                                 fontSize: '20px',
                                                                                 cursor: 'pointer',
                                                                                 display: 'flex',
@@ -1019,17 +1139,17 @@ const Profile = () => {
                                                                                 alignItems: 'center'
                                                                             }}
                                                                         >
-                                                                            &#10094;
+                                                                            &#9664; {/* Bar style arrow */}
                                                                         </button>
                                                                         <button 
                                                                             onClick={() => setCurrentImageIndex(prev => (prev === generatedImages.length - 1 ? 0 : prev + 1))}
                                                                             style={{
-                                                                                background: 'rgba(0,0,0,0.5)',
+                                                                                background: '#f8a26a', /* Burnt orange color */
                                                                                 color: 'white',
                                                                                 border: 'none',
-                                                                                borderRadius: '50%',
-                                                                                width: '40px',
-                                                                                height: '40px',
+                                                                                borderRadius: '4px', /* Bar style */
+                                                                                width: '80px',
+                                                                                height: '100%', /* Fill the entire height */
                                                                                 fontSize: '20px',
                                                                                 cursor: 'pointer',
                                                                                 display: 'flex',
@@ -1037,38 +1157,38 @@ const Profile = () => {
                                                                                 alignItems: 'center'
                                                                             }}
                                                                         >
-                                                                            &#10095;
+                                                                            &#9654; {/* Bar style arrow */}
                                                                         </button>
                                                                     </div>
 
-                                                                    {/* Image Counter */}
+                                                                    {/* Image Counter Pips */}
                                                                     <div style={{
                                                                         position: 'absolute',
                                                                         bottom: '10px',
                                                                         left: '0',
                                                                         width: '100%',
-                                                                        textAlign: 'center'
+                                                                        textAlign: 'center',
+                                                                        display: 'flex',
+                                                                        justifyContent: 'center',
+                                                                        gap: '8px'
                                                                     }}>
-                                                                        <span style={{
-                                                                            background: 'rgba(0,0,0,0.5)',
-                                                                            color: 'white',
-                                                                            padding: '5px 10px',
-                                                                            borderRadius: '15px',
-                                                                            fontSize: '14px'
-                                                                        }}>
-                                                                            {currentImageIndex + 1} / {generatedImages.length}
-                                                                        </span>
+                                                                        {generatedImages.map((_, index) => (
+                                                                            <div
+                                                                                key={index}
+                                                                                onClick={() => setCurrentImageIndex(index)}
+                                                                                style={{
+                                                                                    width: '12px',
+                                                                                    height: '12px',
+                                                                                    borderRadius: '50%',
+                                                                                    backgroundColor: index === currentImageIndex ? '#D35400' : '#40E0D0', /* Burnt orange for active, light turquoise for inactive */
+                                                                                    cursor: 'pointer',
+                                                                                    transition: 'background-color 0.3s'
+                                                                                }}
+                                                                            />
+                                                                        ))}
                                                                     </div>
                                                                 </div>
 
-                                                                {/* Generate New Images Button */}
-                                                                <button 
-                                                                    className="btn btn-outline-primary mt-3" 
-                                                                    onClick={handleGenerateImages}
-                                                                    disabled={isGeneratingImages}
-                                                                >
-                                                                    {isGeneratingImages ? 'Generating...' : 'Generate New Images'}
-                                                                </button>
                                                             </div>
                                                         )}
                                                     </div>
@@ -1081,14 +1201,22 @@ const Profile = () => {
                                 {geminiOutput &&
                                     geminiOutput.trim() !== '' &&
                                     geminiOutput !== 'No response from Gemini.' && (
-                                        <div style={{ textAlign: 'center', marginTop: '20px' }}>
+                                        <div style={{ textAlign: 'left', marginTop: '20px', position: 'absolute', bottom: '20px', left: '30px' }}>
                                             <button
-                                                className="btn btn-primary"
+                                                style={{
+                                                    backgroundColor: '#40E0D0',
+                                                    color: 'white',
+                                                    borderRadius: '50px',
+                                                    padding: '8px 20px',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    fontWeight: 'bold'
+                                                }}
                                                 onClick={handleSaveHistory}
                                                 disabled={isLoadingRecipe}
                                                 title="Save this recipe to your history"
                                             >
-                                                {isLoadingRecipe ? 'Please wait...' : 'Save to History'}
+                                                {isLoadingRecipe ? 'Please wait...' : 'Save'}
                                             </button>
                                             {!userEmail && (
                                                 <div style={{ color: 'red', fontSize: '12px', marginTop: '5px' }}>
@@ -1102,7 +1230,6 @@ const Profile = () => {
                             </div>
                         </div>
 
-                        <button className="btn btn-secondary mt-4" onClick={() => setModalOpen(false)}>Close</button>
                     </>
                 )}
             </Modal>
