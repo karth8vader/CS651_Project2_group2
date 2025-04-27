@@ -48,6 +48,10 @@ const Profile = () => {
     const [historyEntries, setHistoryEntries] = useState([]);
     const [historyTabLoading, setHistoryTabLoading] = useState(false);
     const [expandedCardId, setExpandedCardId] = useState(null);
+    // New state variables for image generation
+    const [generatedImages, setGeneratedImages] = useState([]);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [isGeneratingImages, setIsGeneratingImages] = useState(false);
 
     // Function to refresh user email from localStorage
     const refreshUserEmail = () => {
@@ -323,6 +327,10 @@ const Profile = () => {
             setGeminiOutput(response.data.recipe || 'No response from Gemini.');
             setGeminiImage(response.data.image || '');
             setHasGeneratedRecipe(true);
+
+            // Reset generated images when a new recipe is generated
+            setGeneratedImages([]);
+            setCurrentImageIndex(0);
         } catch (err) {
             console.error('Gemini API error:', err);
             console.error('Error details:', {
@@ -343,6 +351,37 @@ const Profile = () => {
             setGeminiOutput(errorMessage);
         } finally {
             setIsLoadingRecipe(false);
+        }
+    };
+
+    // Function to handle image generation
+    const handleGenerateImages = async () => {
+        if (!geminiOutput) {
+            toast.info('Please generate a recipe first', { position: 'top-center' });
+            return;
+        }
+
+        setIsGeneratingImages(true);
+        setGeneratedImages([]);
+
+        try {
+            const response = await axios.post(`${URL}/api/gemini/generate-images`, {
+                recipeText: geminiOutput
+            });
+
+            console.log('Received image generation response:', response.data);
+
+            if (response.data.images && response.data.images.length > 0) {
+                setGeneratedImages(response.data.images);
+                setCurrentImageIndex(0);
+            } else {
+                toast.warning('No images were generated', { position: 'top-center' });
+            }
+        } catch (err) {
+            console.error('Image generation error:', err);
+            toast.error('Failed to generate images', { position: 'top-center' });
+        } finally {
+            setIsGeneratingImages(false);
         }
     };
 
@@ -380,6 +419,54 @@ const Profile = () => {
         }
     };
 
+
+    // Function to resize and compress image
+    const resizeAndCompressImage = async (base64Data, maxWidth = 800, quality = 0.7) => {
+        return new Promise((resolve, reject) => {
+            try {
+                // Create an image element
+                const img = new Image();
+                img.onload = () => {
+                    // Calculate new dimensions while maintaining aspect ratio
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > maxWidth) {
+                        height = (height * maxWidth) / width;
+                        width = maxWidth;
+                    }
+
+                    // Create a canvas element
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    // Draw the image on the canvas
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Convert canvas to compressed base64 data
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+
+                    // Remove the data URL prefix to get just the base64 data
+                    const base64Data = compressedBase64.split(',')[1];
+
+                    resolve(base64Data);
+                };
+
+                img.onerror = (error) => {
+                    console.error('Error loading image for compression:', error);
+                    reject(error);
+                };
+
+                // Set the source of the image
+                img.src = `data:image/png;base64,${base64Data}`;
+            } catch (error) {
+                console.error('Error in image compression:', error);
+                reject(error);
+            }
+        });
+    };
 
     // Save history to backend
     const handleSaveHistory = async () => {
@@ -424,11 +511,32 @@ const Profile = () => {
         }
 
         try {
+            // Determine which image to upload
+            let imageData = null;
+            let photoUrl = selectedPhoto?.url || '';
+
+            // If we have generated images, use the currently displayed one
+            if (generatedImages.length > 0 && currentImageIndex >= 0 && currentImageIndex < generatedImages.length) {
+                console.log('Using generated image for upload');
+                // Resize and compress the image before sending
+                try {
+                    imageData = await resizeAndCompressImage(generatedImages[currentImageIndex].data);
+                    console.log('Image compressed successfully');
+                } catch (compressionError) {
+                    console.error('Error compressing image:', compressionError);
+                    // Fallback to original image data if compression fails
+                    imageData = generatedImages[currentImageIndex].data;
+                }
+            } else {
+                console.log('No generated images, using original photo URL');
+            }
+
             const response = await axios.post(`${URL}/api/history/save`, {
                 email: freshEmail,
                 recipePrompt: trimmedRecipe,
                 restaurantPrompt: trimmedRestaurants || 'No restaurant suggestions available.',
-                photoUrl: selectedPhoto?.url || ''
+                photoUrl: photoUrl,
+                imageData: imageData
             });
 
             console.log('Save history response:', response.data);
@@ -591,7 +699,9 @@ const Profile = () => {
                                         >
                                             <div style={{ position: 'relative' }}>
                                                 <img
-                                                    src={`${entry.photoUrl}=w400`}
+                                                    src={entry.photoUrl && entry.photoUrl.includes('storage.googleapis.com') 
+                                                        ? entry.photoUrl 
+                                                        : `${entry.photoUrl}=w400`}
                                                     alt="Saved"
                                                     style={{ width: '100%', borderRadius: '8px' }}
                                                 />
@@ -827,6 +937,142 @@ const Profile = () => {
                                                     }}
                                                     dangerouslySetInnerHTML={{ __html: markdownToHtml(geminiOutput) }}
                                                 />
+
+                                                {/* Image Generation Tile */}
+                                                {geminiOutput && !isLoadingRecipe && (
+                                                    <div 
+                                                        style={{ 
+                                                            marginTop: '20px',
+                                                            border: '1px solid #ddd',
+                                                            borderRadius: '8px',
+                                                            padding: '15px',
+                                                            backgroundColor: '#f9f9f9'
+                                                        }}
+                                                    >
+                                                        <h5>Generate Images for this Recipe</h5>
+
+                                                        {generatedImages.length === 0 ? (
+                                                            <button 
+                                                                className="btn btn-primary" 
+                                                                onClick={handleGenerateImages}
+                                                                disabled={isGeneratingImages}
+                                                            >
+                                                                {isGeneratingImages ? 'Generating...' : 'Generate Images'}
+                                                            </button>
+                                                        ) : (
+                                                            <div style={{ marginTop: '15px' }}>
+                                                                {/* Image Slide Deck */}
+                                                                <div style={{ 
+                                                                    position: 'relative',
+                                                                    width: '100%',
+                                                                    maxWidth: '400px',
+                                                                    margin: '0 auto',
+                                                                    height: '300px',
+                                                                    backgroundColor: '#eee',
+                                                                    borderRadius: '8px',
+                                                                    overflow: 'hidden'
+                                                                }}>
+                                                                    {/* Current Image */}
+                                                                    <div style={{
+                                                                        width: '100%',
+                                                                        height: '100%',
+                                                                        display: 'flex',
+                                                                        justifyContent: 'center',
+                                                                        alignItems: 'center'
+                                                                    }}>
+                                                                        <img 
+                                                                            src={`data:${generatedImages[currentImageIndex].mimeType};base64,${generatedImages[currentImageIndex].data}`}
+                                                                            alt={`Generated dish ${currentImageIndex + 1}`}
+                                                                            style={{
+                                                                                maxWidth: '100%',
+                                                                                maxHeight: '100%',
+                                                                                objectFit: 'contain'
+                                                                            }}
+                                                                        />
+                                                                    </div>
+
+                                                                    {/* Navigation Arrows */}
+                                                                    <div style={{
+                                                                        position: 'absolute',
+                                                                        top: '0',
+                                                                        left: '0',
+                                                                        width: '100%',
+                                                                        height: '100%',
+                                                                        display: 'flex',
+                                                                        justifyContent: 'space-between',
+                                                                        alignItems: 'center',
+                                                                        padding: '0 10px'
+                                                                    }}>
+                                                                        <button 
+                                                                            onClick={() => setCurrentImageIndex(prev => (prev === 0 ? generatedImages.length - 1 : prev - 1))}
+                                                                            style={{
+                                                                                background: 'rgba(0,0,0,0.5)',
+                                                                                color: 'white',
+                                                                                border: 'none',
+                                                                                borderRadius: '50%',
+                                                                                width: '40px',
+                                                                                height: '40px',
+                                                                                fontSize: '20px',
+                                                                                cursor: 'pointer',
+                                                                                display: 'flex',
+                                                                                justifyContent: 'center',
+                                                                                alignItems: 'center'
+                                                                            }}
+                                                                        >
+                                                                            &#10094;
+                                                                        </button>
+                                                                        <button 
+                                                                            onClick={() => setCurrentImageIndex(prev => (prev === generatedImages.length - 1 ? 0 : prev + 1))}
+                                                                            style={{
+                                                                                background: 'rgba(0,0,0,0.5)',
+                                                                                color: 'white',
+                                                                                border: 'none',
+                                                                                borderRadius: '50%',
+                                                                                width: '40px',
+                                                                                height: '40px',
+                                                                                fontSize: '20px',
+                                                                                cursor: 'pointer',
+                                                                                display: 'flex',
+                                                                                justifyContent: 'center',
+                                                                                alignItems: 'center'
+                                                                            }}
+                                                                        >
+                                                                            &#10095;
+                                                                        </button>
+                                                                    </div>
+
+                                                                    {/* Image Counter */}
+                                                                    <div style={{
+                                                                        position: 'absolute',
+                                                                        bottom: '10px',
+                                                                        left: '0',
+                                                                        width: '100%',
+                                                                        textAlign: 'center'
+                                                                    }}>
+                                                                        <span style={{
+                                                                            background: 'rgba(0,0,0,0.5)',
+                                                                            color: 'white',
+                                                                            padding: '5px 10px',
+                                                                            borderRadius: '15px',
+                                                                            fontSize: '14px'
+                                                                        }}>
+                                                                            {currentImageIndex + 1} / {generatedImages.length}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Generate New Images Button */}
+                                                                <button 
+                                                                    className="btn btn-outline-primary mt-3" 
+                                                                    onClick={handleGenerateImages}
+                                                                    disabled={isGeneratingImages}
+                                                                >
+                                                                    {isGeneratingImages ? 'Generating...' : 'Generate New Images'}
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </>
                                         )}
                                     </div>

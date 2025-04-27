@@ -4,21 +4,29 @@ const router = express.Router();
 const path = require('path');
 const fs = require('fs');
 const { VertexAI } = require('@google-cloud/vertexai');
+const { GoogleGenAI } = require('@google/genai');
+require('dotenv').config();
 
 const project = 'picplate-login-app';
 const location = 'us-central1';
 
 let vertexAI;
 let recipeModel;
+let genAI;
 
 const keyFile = path.join(__dirname, '../gemini-key.json');
 
 if (fs.existsSync(keyFile)) {
     try {
-        vertexAI = new VertexAI({ project, location, keyFilename: keyFile });
+        // Initialize VertexAI for recipe generation
+        vertexAI = new VertexAI({ project, location });
         recipeModel = vertexAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+
+        // Initialize GoogleGenAI for image generation using API key from .env file
+        const apiKey = process.env.GEMINI_API_KEY;
+        genAI = new GoogleGenAI({apiKey});
     } catch (error) {
-        console.error('❌ Error initializing VertexAI model:', error);
+        console.error('❌ Error initializing AI models:', error);
     }
 } else {
     console.error('❌ Service account key file not found at:', keyFile);
@@ -89,7 +97,7 @@ router.post('/generate-restaurants', async (req, res) => {
     }
 
     try {
-        const prompt = `Suggest 3 restaurants in ${userLocation} that serve food like this: "${dishName.replace(/[#>*`\-]/g, '').slice(0, 400)}".\nEach suggestion should be:\n- **Restaurant Name**\n- One sentence summary why it's a match\n- Include website link if available.\nUse markdown.`;
+        const prompt = `Suggest 3 restaurants in the zip code ${userLocation} that serve food like this: "${dishName.replace(/[#>*`\-]/g, '').slice(0, 400)}".\nEach suggestion should be:\n- **Restaurant Name**\n- One sentence summary why it's a match\n- Include website link if available.\nUse markdown.`;
 
         const result = await recipeModel.generateContent({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -104,6 +112,57 @@ router.post('/generate-restaurants', async (req, res) => {
         console.error('❌ Gemini API error (restaurant generation):', err);
         res.status(500).json({
             error: `Failed to generate restaurant suggestions: ${err.message}`,
+            details: err.response?.data || err.stack
+        });
+    }
+});
+
+// 🖼️ Generate images based on recipe text
+router.post('/generate-images', async (req, res) => {
+    const { recipeText } = req.body;
+
+    if (!recipeText) {
+        return res.status(400).json({ error: 'Recipe text is required for image generation.' });
+    }
+
+    if (!genAI) {
+        return res.status(500).json({
+            error: 'Image generation model not available. Please check server logs for details.',
+            details: 'Model initialization failed.'
+        });
+    }
+
+    try {
+        // Create a prompt for food image generation based on the recipe
+        const prompt = `Create a beautiful, appetizing food photograph of a dish based on this recipe: ${recipeText.substring(0, 500)}. Make it look professional, well-lit, and mouth-watering.`;
+
+        // Generate 4 images using the new method
+        const response = await genAI.models.generateImages({
+            model: 'imagen-3.0-generate-002',
+            prompt: prompt,
+            config: {
+                numberOfImages: 4,
+            },
+        });
+
+        // Extract image data from the response
+        const images = [];
+        let idx = 0;
+        for (const generatedImage of response.generatedImages) {
+            let imgBytes = generatedImage.image.imageBytes;
+            // Convert to base64 for frontend display
+            images.push({
+                mimeType: 'image/png', // Default mime type for generated images
+                data: imgBytes  // Base64 encoded image data
+            });
+            idx++;
+        }
+
+        res.json({ images });
+    } catch (err) {
+        console.error('❌ Image generation API error:', err);
+        res.status(500).json({
+            error: `Failed to generate images: ${err.message}`,
             details: err.response?.data || err.stack
         });
     }
