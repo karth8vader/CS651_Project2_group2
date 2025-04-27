@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/navbar';
 import '../assets/styles/Home.css';
-import hero1 from '../assets/images/hero_login.jpg';
-import hero2 from '../assets/images/hero_2.jpg';
+import picplateLogo from '../assets/images/picplate-logo.svg';
 import dish1 from '../assets/images/dishes_1.jpg';
 import dish2 from '../assets/images/dishes_2.jpg';
 import dish3 from '../assets/images/dishes_3.jpg';
@@ -11,15 +10,7 @@ import dish4 from '../assets/images/dishes_4.jpg';
 
 const Home = () => {
     const navigate = useNavigate();
-    const [activeSlide, setActiveSlide] = useState(0);
-    const sliderImages = [hero1, hero2];
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setActiveSlide((prev) => (prev + 1) % sliderImages.length);
-        }, 4000);
-        return () => clearInterval(interval);
-    }, []);
+    const [currentSlide, setCurrentSlide] = useState(0);
 
     const menuItems = [
         { name: 'Baked new Zealand mussels',  image: dish1 },
@@ -32,71 +23,93 @@ const Home = () => {
         <div className="home-page">
             <Navbar />
 
-            {/* Slider Section */}
-            <div className="slider-wrap">
-                <section className="home-slider">
-                    {sliderImages.map((img, idx) => (
-                        <div
-                            key={idx}
-                            className={`slider-item ${idx === activeSlide ? 'active' : ''}`}
-                            style={{ backgroundImage: `url(${img})` }}
-                        >
-                            <div className="text-center">
-                                <h1 className="slider-heading animated-text">{idx === 0 ? 'PicPlate' : 'Enjoy delicious food'}</h1>
-                                <button onClick={() => navigate('/login')} className="btn btn-outline-white mt-3">Login</button>
-                            </div>
+            {/* Hero Section with Logo */}
+            <div className="hero-section">
+                <div className="container">
+                    <div className="row align-items-center py-5">
+                        <div className="col-md-6 text-center text-md-end mb-4 mb-md-0">
+                            <img 
+                                src={picplateLogo} 
+                                alt="PicPlate Logo" 
+                                className="img-fluid hero-logo" 
+                                style={{ maxHeight: '300px' }}
+                            />
                         </div>
-                    ))}
-                    <div className="custom-shape-divider-bottom">
-                        <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
-                            <path d="M0,0V46.29c47.74,22.19,106.29,32.05,158,28,70-5.47,136-33.69,206-38,72.46-4.45,147.76,17.11,218,35,69.1,17.63,138.77,30.25,209,27,66.49-3.09,130.43-21.36,189-46V0Z" opacity=".25" className="shape-fill"></path>
-                            <path d="M0,0V15.81C47.42,40.69,103.76,54,158,52,228,49.52,294.2,26.35,364,22c71.45-4.48,141.76,15.78,212,35,65.92,18.13,132.48,30.31,200,26,58.31-3.72,113.48-20.3,166-39.8V0Z" opacity=".5" className="shape-fill"></path>
-                            <path d="M0,0V5.63C43,27.91,96,50.25,158,53c72.39,3.28,142.53-18.48,212-35,67.06-16,138.2-24.88,209-15,61,8.64,113.52,30.85,173,39,59.43,8.14,122.36,6.55,179-7V0Z" className="shape-fill"></path>
-                        </svg>
+                        <div className="col-md-6 text-center text-md-start">
+                            <h1 className="display-4 fw-bold">PicPlate</h1>
+                            <p className="lead">Your AI-powered food and restaurant recommendation platform</p>
+                        </div>
                     </div>
-                </section>
+                </div>
             </div>
 
-            {/* Description Section - White Slanted */}
+            {/* Interactive Info Tile and Slide Deck Section */}
             <section className="white-section">
-                <div className="container text-center">
-                    <h2>Welcome to PicPlate</h2>
-                    <p>
-                        PicPlate is an AI-powered food and restaurant recommendation platform designed for educational purposes. By analyzing the mood and visual elements in uploaded images, PicPlate helps you discover healthy recipes and nearby restaurants that match your vibe.
-                    </p>
-                    <p>
-                        <strong>Note:</strong> PicPlate is an independent project and is not affiliated with or endorsed by Pinterest. We do not store Pinterest credentials or any uploaded images.
-                    </p>
+                <div className="container" style={{ maxWidth: '1200px' }}>
+                    <div className="row">
+                        {/* Info Tile Column */}
+                        <div className="col-md-6">
+                            <div className="info-tile-container">
+                                <div className="info-tile">
+                                    {/* Welcome Content (Default View) */}
+                                    <div className="info-tile-front">
+                                        <h2>Welcome to PicPlate</h2>
+                                        <p>
+                                            PicPlate is an AI-powered food and restaurant recommendation platform designed for educational purposes. By analyzing the mood and visual elements in uploaded images, PicPlate helps you discover healthy recipes and nearby restaurants that match your vibe.
+                                        </p>
+                                        <p>
+                                            <strong>Note:</strong> PicPlate is an independent project and is not affiliated with or endorsed by Pinterest. We do not store Pinterest credentials or any uploaded images.
+                                        </p>
+                                        <p className="hover-instruction"><small>Hover to see how it works</small></p>
+                                    </div>
 
-                    <h3 className="mt-4 mb-3">How It Works</h3>
-                    <ol className="text-start mx-auto" style={{ maxWidth: '700px' }}>
-                        <li><strong>Login & Upload:</strong> Sign in using Google or email. Connect Pinterest (optional) to upload your selected images. We only access the images you explicitly choose to share.</li>
-                        <li><strong>Real-Time Mood Detection:</strong> Google Vision analyzes your image for facial expressions, emotions, and dominant colors. Faces are blurred automatically to protect privacy.</li>
-                        <li><strong>AI-Generated Recommendations:</strong> Google Gemini creates healthy recipe suggestions and identifies local dining spots based on your mood and location.</li>
-                    </ol>
-
-                    <p><small>PicPlate is built as an academic research tool. We do not store your Pinterest credentials, and uploaded content is processed in real-time without being permanently saved.</small></p>
-                </div>
-            </section>
-
-
-            {/* Menu Grid Section - Gray Slanted */}
-            <section className="gray-section py-4">
-                <div className="container">
-                    <div className="row mb-4">
-                        <div className="col-md-12 text-center">
-                            <h2 className="menu-heading">Some Exotic Food</h2>
-                        </div>
-                    </div>
-                    <div className="menu-carousel">
-                        {menuItems.map((dish, idx) => (
-                            <div className="menu-tile" key={idx}>
-                                <div className="menu-image" style={{ backgroundImage: `url(${dish.image})` }}></div>
-                                <div className="menu-info">
-                                    <h5 className="dish-name">{dish.name}</h5>
+                                    {/* How It Works Content (Hover View) */}
+                                    <div className="info-tile-back">
+                                        <h2>How It Works</h2>
+                                        <ol className="text-start mx-auto">
+                                            <li><strong>Login & Upload:</strong> Sign in using Google or email. Connect Pinterest (optional) to upload your selected images. We only access the images you explicitly choose to share.</li>
+                                            <li><strong>Real-Time Mood Detection:</strong> Google Vision analyzes your image for facial expressions, emotions, and dominant colors. Faces are blurred automatically to protect privacy.</li>
+                                            <li><strong>AI-Generated Recommendations:</strong> Google Gemini creates healthy recipe suggestions and identifies local dining spots based on your mood and location.</li>
+                                        </ol>
+                                        <p><small>PicPlate is built as an academic research tool. We do not store your Pinterest credentials, and uploaded content is processed in real-time without being permanently saved.</small></p>
+                                    </div>
                                 </div>
                             </div>
-                        ))}
+                        </div>
+
+                        {/* Slide Deck Column */}
+                        <div className="col-md-6">
+                            <div className="slide-deck-container">
+                                <div className="slide-deck">
+                                    <div className="slide-image" style={{ backgroundImage: `url(${menuItems[currentSlide].image})` }}></div>
+                                    <div className="slide-navigation">
+                                        <button 
+                                            className="nav-arrow prev-arrow" 
+                                            onClick={() => setCurrentSlide((prev) => (prev === 0 ? menuItems.length - 1 : prev - 1))}
+                                            aria-label="Previous slide"
+                                        >
+                                            &#10094;
+                                        </button>
+                                        <button 
+                                            className="nav-arrow next-arrow" 
+                                            onClick={() => setCurrentSlide((prev) => (prev === menuItems.length - 1 ? 0 : prev + 1))}
+                                            aria-label="Next slide"
+                                        >
+                                            &#10095;
+                                        </button>
+                                    </div>
+                                    <div className="slide-indicators">
+                                        {menuItems.map((_, idx) => (
+                                            <span 
+                                                key={idx} 
+                                                className={`slide-dot ${idx === currentSlide ? 'active' : ''}`}
+                                                onClick={() => setCurrentSlide(idx)}
+                                            ></span>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
