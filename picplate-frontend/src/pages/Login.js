@@ -78,7 +78,7 @@ const Login = () => {
     return (
         <div className="login-page">
             <Navbar />
-            <div className="main-content scrollable">
+            <div className="main-content scrollable" style={{ paddingTop: '80px' }}>
                 <header className="hero-center">
                     <h1 className="hero-title">Login to <span>PicPlate</span></h1>
                     <button onClick={handleGooglePhotosLogin} className="get-started-btn">

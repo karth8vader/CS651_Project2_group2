@@ -5,20 +5,59 @@ const admin = require('../firebase');
 
 // Save history for a user
 router.post('/save', async (req, res) => {
-    const { email, photoUrl, recipePrompt, restaurantPrompt } = req.body;
+    const { email, photoUrl, photoId, recipePrompt, restaurantPrompt, imageData } = req.body;
 
     if (!email || !recipePrompt || !restaurantPrompt) {
         return res.status(400).json({ error: 'Missing required fields.' });
     }
 
     try {
+        let imageUrl = photoUrl || '';
+
+        // If we have image data, upload it to Cloud Storage
+        if (imageData) {
+            try {
+                // Get a reference to the storage bucket
+                const bucket = admin.storage().bucket();
+
+                // Create a unique filename
+                const filename = `${email.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.png`;
+
+                // Create a buffer from the base64 image data
+                const imageBuffer = Buffer.from(imageData, 'base64');
+
+                // Create a file reference
+                const file = bucket.file(filename);
+
+                // Upload the image
+                await file.save(imageBuffer, {
+                    metadata: {
+                        contentType: 'image/png'
+                    }
+                });
+
+                // Make the file publicly accessible
+                await file.makePublic();
+
+                // Get the public URL
+                imageUrl = `https://storage.googleapis.com/${bucket.name}/${filename}`;
+
+                console.log(`Uploaded image to: ${imageUrl}`);
+            } catch (uploadError) {
+                console.error('Error uploading image to Cloud Storage:', uploadError);
+                // If upload fails, fall back to the original photo URL
+                imageUrl = photoUrl || '';
+            }
+        }
+
         const historyRef = admin.firestore()
             .collection('users')
             .doc(email)
             .collection('history');
 
         const doc = await historyRef.add({
-            photoUrl: photoUrl || '', // optional, may be empty
+            photoUrl: imageUrl,
+            photoId,
             recipePrompt,
             restaurantPrompt,
             timestamp: admin.firestore.FieldValue.serverTimestamp()

@@ -104,7 +104,7 @@ const Home = () => {
             {/* Navigation Bar */}
             <Navbar />
 
-            {/* Hero Section with Logo and Tagline */}
+ {/* Hero Section with Logo and Tagline */}
             <div className="hero-section">
                 <div className="container">
                     <div className="row align-items-center py-5">
