@@ -38,6 +38,7 @@ const Profile = () => {
     const [useEmotions, setUseEmotions] = useState(false);
     const [useColors, setUseColors] = useState(false);
     const [userLocation, setUserLocation] = useState('');
+    const [zipCodeError, setZipCodeError] = useState('');
     const [geminiOutput, setGeminiOutput] = useState('');
     const [isLoadingRecipe, setIsLoadingRecipe] = useState(false);
     const [restaurantOutput, setRestaurantOutput] = useState('');
@@ -49,6 +50,7 @@ const Profile = () => {
     const [historyEntries, setHistoryEntries] = useState([]);
     const [historyTabLoading, setHistoryTabLoading] = useState(false);
     const [expandedCardId, setExpandedCardId] = useState(null);
+    const [processedImage, setProcessedImage] = useState(null);
     // New state variables for image generation
     const [generatedImages, setGeneratedImages] = useState([]);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -94,7 +96,23 @@ const Profile = () => {
 
     const extractDishName = (markdown) => {
         const match = markdown.match(/Main Course:\s*(.+)/i);
-        return match ? match[1].split('\n')[0] : '';
+        if (match) {
+            return match[1].split('\n')[0];
+        }
+
+        // If "Main Course:" pattern is not found, try to extract the title from the first line
+        const lines = markdown.split('\n');
+        for (const line of lines) {
+            const trimmedLine = line.trim();
+            // Look for a line that might be a title (non-empty, not starting with common markdown elements)
+            if (trimmedLine && !trimmedLine.startsWith('#') && !trimmedLine.startsWith('-') && 
+                !trimmedLine.startsWith('*') && !trimmedLine.startsWith('>')) {
+                return trimmedLine;
+            }
+        }
+
+        // If all else fails, return a default dish name
+        return 'Recommended Dish';
     };
 
     // CSS for hover effect
@@ -201,12 +219,20 @@ const Profile = () => {
         setHasGeneratedRestaurants(false);
         setRestaurantOutput('');
         setTemperature(1.0); // Reset temperature to 1.0
+        setProcessedImage(null); // Reset processed image
 
         try {
             const response = await axios.post(`${URL}/api/vision`, {
                 imageUrl: photoUrl,
                 accessToken
             });
+
+            // Store the processed image from the vision API response
+            if (response.data.processedImage) {
+                setProcessedImage(response.data.processedImage);
+            } else {
+                setProcessedImage(null);
+            }
 
             setAnalysisResults(prev => ({
                 ...prev,
@@ -300,7 +326,14 @@ const Profile = () => {
 
     useEffect(() => {
         if (activeTab === 'restaurants' && geminiOutput && userLocation && !hasGeneratedRestaurants) {
-            handleGeminiRestaurantRequest();
+            // Validate zip code before triggering restaurant generation
+            const zipCodeRegex = /^\d{5}$/;
+            if (zipCodeRegex.test(userLocation)) {
+                handleGeminiRestaurantRequest();
+            } else if (userLocation) {
+                // Only set error if there's some input but it's invalid
+                setZipCodeError('Invalid zip code. Please enter a 5-digit zip code.');
+            }
         }
     }, [userLocation]);
 
@@ -327,7 +360,8 @@ const Profile = () => {
                 useEmotions: useEmotions,
                 useColors: useColors,
                 imageUrl: selectedPhoto.url,
-                temperature: temperature // Add temperature parameter
+                temperature: temperature, // Add temperature parameter
+                processedImage: processedImage // Pass the processed image from vision API
             });
 
             console.log('Received response from Gemini API:', response.data);
@@ -393,7 +427,11 @@ const Profile = () => {
     };
 
 
-    const handleGeminiRestaurantRequest = async () => {
+    const handleGeminiRestaurantRequest = async (e) => {
+        if (e) {
+            e.preventDefault();
+        }
+
         if (!geminiOutput) {
             console.error('Cannot generate restaurants: recipe missing.');
             return;
@@ -405,15 +443,20 @@ const Profile = () => {
         const zipCodeRegex = /^\d{5}$/;
         if (!zipCodeRegex.test(userLocation)) {
             console.warn('Invalid zip code format.');
+            setZipCodeError('Invalid zip code. Please enter a 5-digit zip code.');
             return;
         }
+
+        // Clear any previous error
+        setZipCodeError('');
 
         setIsLoadingRestaurants(true);
 
         try {
             const response = await axios.post(`${URL}/api/gemini/generate-restaurants`, {
                 dishName,
-                userLocation
+                userLocation,
+                processedImage: processedImage // Pass the processed image from vision API
             });
 
             setRestaurantOutput(response.data.restaurants || 'No restaurant suggestions received.');
@@ -550,6 +593,9 @@ const Profile = () => {
             toast.success('Saved successfully!', { position: 'top-center' });
             setModalOpen(false);
             setTemperature(1.0); // Reset temperature when modal is closed
+            setProcessedImage(null); // Reset processed image when modal is closed
+            setUserLocation(''); // Clear zip code field when modal is closed
+            setZipCodeError(''); // Clear any zip code errors
             setActiveTab('photos');
 
             fetchHistoryEntries();
@@ -891,6 +937,9 @@ const Profile = () => {
                                             onClick={() => {
                                                 setModalOpen(false);
                                                 setTemperature(1.0); // Reset temperature when modal is closed
+                                                setProcessedImage(null); // Reset processed image when modal is closed
+                                                setUserLocation(''); // Clear zip code field when modal is closed
+                                                setZipCodeError(''); // Clear any zip code errors
                                             }}
                                         >
                                             X
@@ -967,7 +1016,16 @@ const Profile = () => {
                                                 id="locationInput"
                                                 type="text"
                                                 value={userLocation}
-                                                onChange={(e) => setUserLocation(e.target.value)}
+                                                onChange={(e) => {
+                                                    setUserLocation(e.target.value);
+                                                    // Clear error when user types
+                                                    if (zipCodeError) setZipCodeError('');
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        handleGeminiRestaurantRequest(e);
+                                                    }
+                                                }}
                                                 pattern="\d{5}"
                                                 maxLength="5"
                                                 required
@@ -976,11 +1034,21 @@ const Profile = () => {
                                                     width: '100%',
                                                     padding: '8px',
                                                     borderRadius: '6px',
-                                                    border: '1px solid #ccc',
+                                                    border: zipCodeError ? '1px solid #ff0000' : '1px solid #ccc',
                                                     marginTop: '8px',
-                                                    marginBottom: '16px'
+                                                    marginBottom: zipCodeError ? '8px' : '16px'
                                                 }}
                                             />
+                                            {zipCodeError && (
+                                                <div style={{ 
+                                                    color: '#ff0000', 
+                                                    fontSize: '14px', 
+                                                    marginBottom: '16px',
+                                                    marginTop: '-4px'
+                                                }}>
+                                                    {zipCodeError}
+                                                </div>
+                                            )}
                                         </form>
                                         {isLoadingRestaurants ? (
                                             <p>⏳ Fetching restaurant suggestions from Gemini...</p>

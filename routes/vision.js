@@ -2,12 +2,67 @@ const express = require('express');
 const { ImageAnnotatorClient } = require('@google-cloud/vision');
 const path = require('path');
 const axios = require('axios');
+const sharp = require('sharp');
 const router = express.Router();
 
 // ✅ Adjust this path if needed to point to your correct service account key
 const vision = new ImageAnnotatorClient({
     keyFilename: path.resolve(__dirname, '../picplate-service-account.json')
 });
+
+// Utility function to process image: detect faces and draw black boxes over them
+async function processImageForFaces(imageBuffer, faces) {
+    try {
+        // If no faces detected, return the original image
+        if (!faces || faces.length === 0) {
+            return imageBuffer;
+        }
+
+        // Process image with Sharp to draw black boxes over faces
+        let sharpImage = sharp(imageBuffer);
+
+        // Get image metadata to create SVG with proper dimensions
+        const metadata = await sharpImage.metadata();
+
+        // Create SVG with rectangles for each face
+        let svgRectangles = '';
+        faces.forEach(face => {
+            if (face.boundingPoly && face.boundingPoly.vertices) {
+                const vertices = face.boundingPoly.vertices;
+
+                // Calculate rectangle coordinates
+                const minX = Math.min(...vertices.map(v => v.x || 0));
+                const minY = Math.min(...vertices.map(v => v.y || 0));
+                const maxX = Math.max(...vertices.map(v => v.x || 0));
+                const maxY = Math.max(...vertices.map(v => v.y || 0));
+
+                const width = maxX - minX;
+                const height = maxY - minY;
+
+                // Add rectangle to SVG
+                svgRectangles += `<rect x="${minX}" y="${minY}" width="${width}" height="${height}" fill="black" />`;
+            }
+        });
+
+        // Create complete SVG
+        const svg = `<svg width="${metadata.width}" height="${metadata.height}" xmlns="http://www.w3.org/2000/svg">${svgRectangles}</svg>`;
+
+        // Composite the SVG over the original image
+        const processedImageBuffer = await sharpImage
+            .composite([{
+                input: Buffer.from(svg),
+                top: 0,
+                left: 0
+            }])
+            .toBuffer();
+
+        return processedImageBuffer;
+    } catch (error) {
+        console.error('❌ Error processing image for faces:', error);
+        // Return original image if processing fails
+        return imageBuffer;
+    }
+}
 
 router.post('/', async (req, res) => {
     const { imageUrl, accessToken } = req.body;
@@ -78,7 +133,13 @@ router.post('/', async (req, res) => {
             boundingPoly: text.boundingPoly
         })) || [];
 
-        // Send all data including boundingPolys
+        // Process image to censor faces
+        const processedImageBuffer = await processImageForFaces(imageBuffer, faces);
+
+        // Convert processed image to base64 for response
+        const processedImageBase64 = processedImageBuffer.toString('base64');
+
+        // Send all data including boundingPolys and processed image
         res.json({ 
             labels, 
             colors, 
@@ -92,7 +153,9 @@ router.post('/', async (req, res) => {
                 text: textBoundingPolys
             },
             // Include simple label descriptions for backward compatibility
-            labelDescriptions: labels.map(label => label.description)
+            labelDescriptions: labels.map(label => label.description),
+            // Include processed image with faces censored
+            processedImage: processedImageBase64
         });
 
     } catch (err) {

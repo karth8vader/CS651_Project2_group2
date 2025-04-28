@@ -8,8 +8,8 @@
   "dependencies": {
     "@google-cloud/vertexai": "^1.10.0",
     "@google-cloud/vision": "^5.1.0",
-    "@google/generative-ai": "^0.2.1",
     "@google/genai": "^0.10.0",
+    "@google/generative-ai": "^0.2.1",
     "axios": "^1.8.4",
     "cookie-parser": "~1.4.4",
     "cors": "^2.8.5",
@@ -21,6 +21,7 @@
     "morgan": "~1.9.1",
     "owl.carousel": "^2.3.4",
     "pug": "2.0.0-beta11",
+    "sharp": "^0.34.1",
     "showdown": "^2.1.0"
   }
 }
