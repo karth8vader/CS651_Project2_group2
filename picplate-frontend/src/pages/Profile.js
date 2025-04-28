@@ -138,7 +138,7 @@ const Profile = () => {
         },
         photoWrapper: {
             textAlign: 'center',
-            maxWidth: '220px',
+            width: '100%', // Changed from maxWidth: '220px' to width: '100%' to allow proper resizing
             position: 'relative',
             cursor: 'pointer',
         },
@@ -703,11 +703,20 @@ const Profile = () => {
 
             <div style={{ padding: '20px' }}>
                 {activeTab === 'photos' && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', justifyContent: 'center' }}>
+                    <div style={{ 
+                        columnCount: 'auto',
+                        columnWidth: '220px',
+                        columnGap: '10px',
+                        padding: '10px'
+                    }}>
                         {(photos || []).map(photo => (
                             <div
                                 key={photo.id}
-                                style={styles.photoWrapper}
+                                style={{
+                                    ...styles.photoWrapper,
+                                    breakInside: 'avoid',
+                                    marginBottom: '10px'
+                                }}
                                 onClick={() => handleAnalyzePhoto(photo.id, photo.baseUrl)}
                                 className="photo-item"
                             >
@@ -807,14 +816,16 @@ const Profile = () => {
                                                         style={{ overflow: 'hidden', marginTop: '10px', fontSize: '13px' }}
                                                     >
                                                         <strong>Recipe:</strong>
-                                                        <div style={{ maxHeight: '100px', overflowY: 'auto', marginBottom: '8px' }}>
-                                                            {entry.recipePrompt}
-                                                        </div>
+                                                        <div 
+                                                            style={{ maxHeight: '100px', overflowY: 'auto', marginBottom: '8px' }}
+                                                            dangerouslySetInnerHTML={{ __html: markdownToHtml(entry.recipePrompt) }}
+                                                        />
 
                                                         <strong>Restaurants:</strong>
-                                                        <div style={{ maxHeight: '100px', overflowY: 'auto' }}>
-                                                            {entry.restaurantPrompt}
-                                                        </div>
+                                                        <div 
+                                                            style={{ maxHeight: '100px', overflowY: 'auto' }}
+                                                            dangerouslySetInnerHTML={{ __html: markdownToHtml(entry.restaurantPrompt) }}
+                                                        />
 
                                                         <button
                                                             className="btn btn-sm btn-danger mt-2"
