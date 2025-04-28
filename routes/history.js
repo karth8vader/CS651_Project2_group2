@@ -5,7 +5,7 @@ const admin = require('../firebase');
 
 // Save history for a user
 router.post('/save', async (req, res) => {
-    const { email, photoUrl, recipePrompt, restaurantPrompt, imageData } = req.body;
+    const { email, photoUrl, photoId, recipePrompt, restaurantPrompt, imageData } = req.body;
 
     if (!email || !recipePrompt || !restaurantPrompt) {
         return res.status(400).json({ error: 'Missing required fields.' });
@@ -57,6 +57,7 @@ router.post('/save', async (req, res) => {
 
         const doc = await historyRef.add({
             photoUrl: imageUrl,
+            photoId,
             recipePrompt,
             restaurantPrompt,
             timestamp: admin.firestore.FieldValue.serverTimestamp()

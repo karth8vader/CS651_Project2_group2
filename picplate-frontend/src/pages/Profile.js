@@ -9,7 +9,7 @@
  * 5. Generating images for recipes
  * 6. Saving and displaying user history
  * 
- * The component uses multiple APIs and maintains complex state to provide
+ * The component uses multiple APIs and maintains a complex state to provide
  * a seamless user experience for food image analysis and recipe generation.
  */
 import React, { useEffect, useState, useRef } from 'react';
@@ -486,6 +486,7 @@ const Profile = () => {
             // Prepare image data for saving
             let imageData = null;
             let photoUrl = selectedPhoto?.url || '';
+            let photoId = selectedPhoto?.id || '';
 
             // If AI-generated images exist, use the currently displayed one
             if (generatedImages.length > 0 && currentImageIndex >= 0 && currentImageIndex < generatedImages.length) {
@@ -511,6 +512,7 @@ const Profile = () => {
                 recipePrompt: trimmedRecipe,      // Generated recipe
                 restaurantPrompt: trimmedRestaurants || 'No restaurant suggestions available.',
                 photoUrl: photoUrl,               // Original photo URL (if no generated image)
+                photoId: photoId,                 // Original photo ID for refreshing URLs later
                 imageData: imageData              // Generated image data (if available)
             });
 
@@ -568,9 +570,46 @@ const Profile = () => {
             // Log response for debugging
             console.log('Fetch history response:', response.data);
 
-            // Update state with fetched history entries
-            // If no history is found, default to empty array
-            setHistoryEntries(response.data.history || []);
+            const fetchedHistory = response.data.history || [];
+
+            // Get Google authentication data from localStorage
+            const googleUserItem = localStorage.getItem('google_user');
+            const googleUser = googleUserItem && googleUserItem !== 'undefined' ? JSON.parse(googleUserItem) : null;
+            const accessToken = googleUser?.access_token || localStorage.getItem('google_access_token');
+
+            // If no accessToken available, just show without refreshing
+            if (!accessToken) {
+                console.warn('No access token found, displaying saved history without refreshing photo URLs.');
+                setHistoryEntries(fetchedHistory);
+                return;
+            }
+
+            // Refresh photoUrl if photoId exists
+            const refreshedHistory = await Promise.all(
+                fetchedHistory.map(async (entry) => {
+                    if (entry.photoId) {
+                        try {
+                            const photoResponse = await axios.get(`https://photoslibrary.googleapis.com/v1/mediaItems/${entry.photoId}`, {
+                                headers: {
+                                    Authorization: `Bearer ${accessToken}`
+                                }
+                            });
+                            return {
+                                ...entry,
+                                photoUrl: photoResponse.data.baseUrl // Updated fresh URL
+                            };
+                        } catch (error) {
+                            console.error('Failed to refresh photo URL for entry:', entry, error);
+                            // fallback to the old photoUrl if fetch fails
+                            return entry;
+                        }
+                    }
+                    return entry;
+                })
+            );
+
+            console.log('Refreshed history entries:', refreshedHistory);
+            setHistoryEntries(refreshedHistory);
         } catch (err) {
             // Handle errors
             console.error('Fetch history error:', err);
