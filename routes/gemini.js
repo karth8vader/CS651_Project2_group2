@@ -1,4 +1,10 @@
-// routes/gemini.js
+/**
+ * Gemini API Router
+ * 
+ * This module provides routes for interacting with Google's Gemini AI models.
+ * It handles recipe generation, restaurant recommendations, and image generation
+ * based on user inputs and images.
+ */
 const express = require('express');
 const router = express.Router();
 const path = require('path');
@@ -9,27 +15,33 @@ const { ImageAnnotatorClient } = require('@google-cloud/vision');
 const sharp = require('sharp');
 require('dotenv').config();
 
+// Google Cloud project configuration
 const project = 'picplate-login-app';
 const location = 'us-central1';
 
-let vertexAI;
-let recipeModel;
-let genAI;
-let visionClient;
+// AI service client instances
+let vertexAI;        // For accessing Vertex AI services
+let recipeModel;     // Specific Gemini model for recipe generation
+let genAI;           // For accessing Gemini API directly
+let visionClient;    // For accessing Vision API
 
+// Path to the service account key file for Gemini API
 const keyFile = path.join(__dirname, '../gemini-key.json');
 
+// Initialize AI services if the key file exists
 if (fs.existsSync(keyFile)) {
     try {
-        // Initialize VertexAI for recipe generation
+        // Initialize VertexAI for recipe generation using Gemini 2.0 Flash model
+        // This model is optimized for fast text generation with good quality
         vertexAI = new VertexAI({ project, location });
         recipeModel = vertexAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
-        // Initialize GoogleGenAI for image generation using API key from .env file
+        // Initialize GoogleGenAI SDK for image generation
+        // This uses the API key from environment variables
         const apiKey = process.env.GEMINI_API_KEY;
         genAI = new GoogleGenAI({apiKey});
 
-        // Initialize Vision API client
+        // Initialize Vision API client for image analysis and face detection
         const visionKeyFile = path.resolve(__dirname, '../picplate-service-account.json');
         if (fs.existsSync(visionKeyFile)) {
             visionClient = new ImageAnnotatorClient({
@@ -45,37 +57,50 @@ if (fs.existsSync(keyFile)) {
     console.error('❌ Service account key file not found at:', keyFile);
 }
 
-// Utility function to process image: detect faces and draw black boxes over them
+/**
+ * Detects faces in an image and draws black boxes over them for privacy
+ * 
+ * @param {Buffer} imageBuffer - The raw image data as a buffer
+ * @returns {Promise<Buffer>} - Promise resolving to the processed image buffer with faces obscured
+ * 
+ * This utility function uses Google's Vision API to detect faces in the provided image,
+ * then uses the Sharp library to draw black rectangles over each detected face.
+ * This is used for privacy protection before processing images with Gemini AI.
+ * If no faces are detected or if an error occurs, the original image is returned.
+ */
 async function processImageForFaces(imageBuffer) {
     try {
-        // Convert buffer to base64 for Vision API
+        // Convert buffer to base64 for Vision API request
         const base64Image = imageBuffer.toString('base64');
 
-        // Detect faces using Vision API
+        // Detect faces using Vision API's faceDetection method
         const [result] = await visionClient.faceDetection({
             image: { content: base64Image }
         });
 
+        // Extract face annotations from the result, defaulting to empty array if none
         const faces = result.faceAnnotations || [];
 
-        // If no faces detected, return the original image
+        // If no faces detected, return the original image unchanged
         if (faces.length === 0) {
             return imageBuffer;
         }
 
-        // Process image with Sharp to draw black boxes over faces
+        // Initialize Sharp with the original image for processing
         let sharpImage = sharp(imageBuffer);
 
-        // Get image metadata to create SVG with proper dimensions
+        // Get image dimensions to create properly sized SVG overlay
         const metadata = await sharpImage.metadata();
 
-        // Create SVG with rectangles for each face
+        // Create SVG rectangles for each detected face
         let svgRectangles = '';
         faces.forEach(face => {
+            // Only process faces with valid bounding polygon data
             if (face.boundingPoly && face.boundingPoly.vertices) {
                 const vertices = face.boundingPoly.vertices;
 
-                // Calculate rectangle coordinates
+                // Calculate rectangle coordinates from the vertices
+                // Using min/max to handle any vertex order
                 const minX = Math.min(...vertices.map(v => v.x || 0));
                 const minY = Math.min(...vertices.map(v => v.y || 0));
                 const maxX = Math.max(...vertices.map(v => v.x || 0));
@@ -84,15 +109,15 @@ async function processImageForFaces(imageBuffer) {
                 const width = maxX - minX;
                 const height = maxY - minY;
 
-                // Add rectangle to SVG
+                // Add a black rectangle to the SVG for this face
                 svgRectangles += `<rect x="${minX}" y="${minY}" width="${width}" height="${height}" fill="black" />`;
             }
         });
 
-        // Create complete SVG
+        // Create complete SVG with all face rectangles
         const svg = `<svg width="${metadata.width}" height="${metadata.height}" xmlns="http://www.w3.org/2000/svg">${svgRectangles}</svg>`;
 
-        // Composite the SVG over the original image
+        // Overlay the SVG on top of the original image
         const processedImageBuffer = await sharpImage
             .composite([{
                 input: Buffer.from(svg),
@@ -104,7 +129,7 @@ async function processImageForFaces(imageBuffer) {
         return processedImageBuffer;
     } catch (error) {
         console.error('❌ Error processing image for faces:', error);
-        // Return original image if processing fails
+        // Return original image if any error occurs during processing
         return imageBuffer;
     }
 }
