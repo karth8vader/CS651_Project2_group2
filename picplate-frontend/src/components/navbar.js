@@ -28,7 +28,10 @@ const Navbar = () => {
                             className="mr-2"
                             style={{ height: '40px' }}
                         />
-                        <span>PicPlate</span>
+                        {/* Show "PicPlate" text only if not on Home */}
+                        {location.pathname !== '/' && (
+                            <span className="ms-2">PicPlate</span>
+                        )}
                     </Link>
 
                     <button
