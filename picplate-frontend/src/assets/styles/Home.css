@@ -1,329 +1,386 @@
-/* Home.css */
+/* Home.css - Main stylesheet for the PicPlate home page */
 
+/* General Page Styling - Sets the base font for the entire home page */
 .home-page {
-    font-family: 'Open Sans', sans-serif;
+    font-family: 'Open Sans', sans-serif; /* Clean, modern sans-serif font for better readability */
 }
 
+/* Hero Section - The top banner area with the logo and tagline */
 .hero-section {
-    position: relative;
-    background-color: #FFFBF0; /* Lighter cream color */
-    padding: 3rem 0;
-    z-index: 1;
-    min-height: 60vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+    position: relative; /* Allows for absolute positioning of child elements if needed */
+    background-color: #FFFBF0; /* Light cream background for warm, inviting feel */
+    padding: 1rem 0; /* Vertical padding for spacing */
+    z-index: 1; /* Ensures the hero section appears above other elements */
+    min-height: 5vh; /* Minimum height to ensure visibility */
+    display: flex; /* Uses flexbox for layout */
+    flex-direction: column; /* Stacks children vertically */
+    justify-content: center; /* Centers content vertically */
 }
 
+/* Logo styling with hover effect */
 .hero-logo {
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease; /* Smooth animation for hover effect */
 }
 
 .hero-logo:hover {
-    transform: scale(1.05);
+    transform: scale(1.05); /* Slightly enlarges logo on hover for interactive feel */
 }
 
+/* Main heading in hero section */
 .hero-section h1 {
-    color: #333;
-    margin-bottom: 1rem;
+    color: #333; /* Dark gray for good contrast and readability */
+    margin-bottom: 1rem; /* Space between heading and paragraph */
 }
 
+/* Tagline paragraph in hero section */
 .hero-section p.lead {
-    color: #555;
-    font-size: 1.25rem;
+    color: #555; /* Medium gray for secondary text */
+    font-size: 1.25rem; /* Larger font size for emphasis */
 }
 
-.btn-outline-white {
-    color: #fff;
-    border: 2px solid #fff;
-    background: transparent;
-    padding: 0.5rem 1.5rem;
-    border-radius: 30px;
-    font-weight: 600;
-    transition: 0.3s;
+/* Main content sections - Light background sections of the page */
+.white-section {
+    background-color: #FFFBF0; /* Consistent cream background matching hero section */
+    padding: 4rem 0; /* Generous vertical padding for visual separation */
+    position: relative; /* Enables z-index positioning */
+    z-index: 2; /* Stacking context for proper layering */
+    display: block; /* Standard block display */
+    width: 100%; /* Full width of container */
 }
 
-.btn-outline-white:hover {
-    background: #fff;
-    color: #000;
+/* Interactive Info Tile Section - Container for the flippable information card */
+.info-tile-container {
+    display: flex; /* Uses flexbox for centering */
+    justify-content: center; /* Centers horizontally */
+    align-items: center; /* Centers vertically */
+    padding: 2rem 0; /* Vertical padding for spacing */
+    width: 100%; /* Full width of parent */
+    min-height: 450px; /* Minimum height to accommodate content */
 }
 
-@keyframes fadeInUp {
+/* Main info tile card with hover effects */
+.info-tile {
+    background: #fff; /* White background for clean look */
+    border-radius: 15px; /* Rounded corners for modern design */
+    overflow: hidden; /* Prevents content from spilling outside rounded corners */
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    transition: all 0.4s ease; /* Smooth animation for hover effects */
+    max-width: 800px; /* Maximum width for readability */
+    height: 400px; /* Fixed height for consistent layout */
+    width: 100%; /* Full width up to max-width */
+    text-align: center; /* Centered text */
+    margin: 2rem auto; /* Centered with vertical spacing */
+    position: relative; /* For absolute positioning of front/back faces */
+}
+
+/* Enhanced shadow and slight lift effect on hover */
+.info-tile:hover {
+    box-shadow: 0 8px 30px rgba(139, 69, 19, 0.2); /* Deeper shadow with brown tint */
+    transform: translateY(-5px); /* Slight upward movement for "lifting" effect */
+}
+
+/* Common styles for both front and back faces of the info tile */
+.info-tile-front,
+.info-tile-back {
+    position: absolute; /* Positioned over each other */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden; /* Prevents seeing the back of the element */
+    transition: opacity 0.6s ease, transform 0.6s ease; /* Smooth transition for flip effect */
+    padding: 2rem; /* Internal spacing */
+    display: flex; /* Flexbox for centering content */
+    flex-direction: column; /* Stacks content vertically */
+    justify-content: center; /* Centers content vertically */
+    background-color: #fff; /* White background */
+    z-index: 1; /* Stacking context */
+}
+
+/* Front face styling (visible by default) */
+.info-tile-front {
+    opacity: 1; /* Fully visible */
+    transform: translateY(0); /* Normal position */
+}
+
+/* Back face styling (hidden by default) */
+.info-tile-back {
+    opacity: 0; /* Invisible initially */
+    transform: translateY(20px); /* Slightly offset for animation */
+    visibility: visible; /* Keeps element in DOM for transition */
+}
+
+/* Front face animation on hover - fades out and moves up */
+.info-tile:hover .info-tile-front {
+    opacity: 0; /* Becomes invisible */
+    transform: translateY(-20px); /* Moves up as it fades out */
+}
+
+/* Back face animation on hover - fades in and moves to normal position */
+.info-tile:hover .info-tile-back {
+    opacity: 1; /* Becomes fully visible */
+    transform: translateY(0); /* Moves to normal position */
+    visibility: visible; /* Ensures visibility */
+}
+
+/* Hover instruction text styling */
+.hover-instruction {
+    color: #8B4513; /* Brown color for subtle emphasis */
+    margin-top: 1rem; /* Space above */
+    font-style: italic; /* Italicized for visual distinction */
+}
+
+/* Dish Slider Section - Interactive carousel showing food dishes and recipes */
+.slide-deck-container {
+    display: flex; /* Uses flexbox for layout */
+    justify-content: center; /* Centers horizontally */
+    align-items: center; /* Centers vertically */
+    padding: 2rem 0; /* Vertical padding for spacing */
+    width: 100%; /* Full width of parent */
+    min-height: 450px; /* Minimum height to accommodate content */
+}
+
+/* Main slide deck card with hover effects */
+.slide-deck {
+    background: #fff; /* White background for clean look */
+    border-radius: 15px; /* Rounded corners for modern design */
+    overflow: hidden; /* Prevents content from spilling outside rounded corners */
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    transition: all 0.4s ease; /* Smooth animation for hover effects */
+    max-width: 800px; /* Maximum width for readability */
+    height: 400px; /* Fixed height for consistent layout */
+    width: 100%; /* Full width up to max-width */
+    text-align: center; /* Centered text */
+    margin: 2rem auto; /* Centered with vertical spacing */
+    position: relative; /* For absolute positioning of elements inside */
+}
+
+/* Enhanced shadow and slight lift effect on hover */
+.slide-deck:hover {
+    box-shadow: 0 8px 30px rgba(139, 69, 19, 0.2); /* Deeper shadow with brown tint */
+    transform: translateY(-5px); /* Slight upward movement for "lifting" effect */
+}
+
+/* Food dish image styling */
+.slide-image {
+    background-size: contain; /* Makes the whole image visible within container */
+    background-repeat: no-repeat; /* Prevents image tiling */
+    background-position: center; /* Centers the image */
+    height: 100%; /* Full height of container */
+    width: 100%; /* Full width of container */
+}
+
+/* Dish name heading */
+.dish-title {
+    font-size: 1.5rem; /* Larger font size for emphasis */
+    margin-top: 1rem; /* Space above */
+    color: #333; /* Dark gray for good contrast */
+}
+
+/* Recipe view container with fade-in animation */
+.recipe-view {
+    padding: 2rem; /* Internal spacing */
+    text-align: center; /* Centered text */
+    opacity: 0; /* Initially invisible */
+    animation: fadeIn 0.6s forwards; /* Animation to fade in the recipe */
+}
+
+/* Keyframe animation for fading in the recipe view */
+@keyframes fadeIn {
     from {
-        transform: translateY(30px);
-        opacity: 0;
+        opacity: 0; /* Start invisible */
     }
     to {
-        transform: translateY(0);
-        opacity: 1;
+        opacity: 1; /* End fully visible */
     }
 }
 
-/* Sections */
-.white-section {
-    background-color: #FFFBF0; /* Lighter cream color */
-    padding: 4rem 0;
-    position: relative;
-    z-index: 2;
-    display: block; /* Ensure section is displayed as a block */
-    width: 100%; /* Ensure section takes full width */
+/* Toggle button for showing/hiding recipe - circular button in bottom right */
+.toggle-button {
+    position: absolute; /* Positioned relative to slide deck */
+    bottom: 20px; /* Distance from bottom */
+    right: 20px; /* Distance from right */
+    width: 45px; /* Fixed width */
+    height: 45px; /* Fixed height - creates perfect circle with width */
+    background-color: #4285F4; /* Google blue color */
+    border: none; /* No border */
+    border-radius: 50%; /* Circular shape */
+    color: #fff; /* White text/icon */
+    font-size: 1.8rem; /* Large icon size */
+    display: flex; /* Flexbox for centering icon */
+    align-items: center; /* Centers vertically */
+    justify-content: center; /* Centers horizontally */
+    cursor: pointer; /* Hand cursor on hover */
+    transition: 0.3s ease; /* Smooth hover transition */
 }
 
-.gray-section {
-    background-color: #FFF8E1; /* Same cream color as body */
-    padding: 5rem 0 0 0;
-    position: relative;
-    z-index: 2;
+/* Darker blue on hover for toggle button */
+.toggle-button:hover {
+    background-color: #3367D6; /* Darker Google blue */
 }
 
-/* SVG Slant Divider - Removed */
-
-/* Interactive Info Tile */
-.info-tile-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 2rem 0;
-    width: 100%; /* Ensure container takes full width */
-    min-height: 450px; /* Ensure container has enough height */
-}
-
-.info-tile {
-    background: #fff;
-    border-radius: 15px;
-    overflow: hidden;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-    transition: all 0.4s ease;
-    max-width: 800px;
-    position: relative;
-    height: 400px; /* Changed from min-height to fixed height */
-    width: 100%; /* Ensure the tile takes full width up to max-width */
-    padding: 0; /* Removed padding as it's applied to front/back */
-    text-align: center;
-    margin: 2rem auto;
-    display: block; /* Ensure the tile is displayed as a block element */
-}
-
-.info-tile:hover {
-    box-shadow: 0 8px 30px rgba(139, 69, 19, 0.2);
-    transform: translateY(-5px);
-}
-
-.info-tile-front, 
-.info-tile-back {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    backface-visibility: hidden;
-    transition: opacity 0.6s ease, transform 0.6s ease;
-    padding: 2rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    z-index: 1; /* Ensure content is above background */
-    background-color: #fff; /* Ensure background is visible */
-}
-
-.info-tile-front {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.info-tile-back {
-    opacity: 0;
-    transform: translateY(20px);
-    visibility: visible; /* Ensure back face is visible when opacity changes */
-}
-
-.info-tile:hover .info-tile-front {
-    opacity: 0;
-    transform: translateY(-20px);
-}
-
-.info-tile:hover .info-tile-back {
-    opacity: 1;
-    transform: translateY(0);
-    visibility: visible; /* Ensure back face is visible when hovered */
-}
-
-.hover-instruction {
-    color: #8B4513;
-    margin-top: 1rem;
-    font-style: italic;
-}
-
-/* Slide Deck Section */
-.slide-deck-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 2rem 0;
-    width: 100%;
-    min-height: 450px;
-}
-
-.slide-deck {
-    background: #fff;
-    border-radius: 15px;
-    overflow: hidden;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-    transition: all 0.4s ease;
-    max-width: 800px;
-    position: relative;
-    height: 400px;
-    width: 100%;
-    text-align: center;
-    margin: 2rem auto;
-    display: block;
-}
-
-.slide-deck:hover {
-    box-shadow: 0 8px 30px rgba(139, 69, 19, 0.2);
-    transform: translateY(-5px);
-}
-
+/* Dish Slider Arrows - Navigation controls for the slider */
+/* Note: This redefines slide-image with different properties */
 .slide-image {
-    background-size: cover;
-    background-position: center;
-    height: 100%;
-    width: 100%;
+    background-size: cover; /* Covers the entire container, may crop image */
+    background-position: center center; /* Perfect centering */
+    background-repeat: no-repeat; /* Prevents image tiling */
+    height: 100%; /* Full height */
+    width: 100%; /* Full width */
 }
 
-.slide-navigation {
-    position: absolute;
+/* Navigation arrow buttons */
+.arrow-button {
+    background: none; /* Transparent background */
+    border: none; /* No border */
+    font-size: 2.5rem; /* Large size for visibility */
+    cursor: pointer; /* Hand cursor on hover */
+    color: #4285F4; /* Google blue color */
+}
+
+/* Darker blue on hover for arrow buttons */
+.arrow-button:hover {
+    color: #3367D6; /* Darker Google blue */
+}
+
+/* Features Section - Showcases the technologies used in the application */
+.features-section {
+    background-color: #FFF8E1; /* Light yellow background for visual distinction */
+    padding: 5rem 0; /* Generous vertical padding */
+    text-align: center; /* Centers all text content */
+}
+
+/* Row layout for feature tiles */
+.features-section .row {
+    display: flex; /* Uses flexbox for layout */
+    flex-wrap: wrap; /* Allows items to wrap to next line on smaller screens */
+    justify-content: center; /* Centers items horizontally */
+    gap: 1.5rem; /* Spacing between feature tiles */
+}
+
+/* Individual feature tile styling */
+.feature-tile {
+    width: 100%; /* Full width within its column */
+    height: 250px; /* Fixed height for consistency */
+    background: #fff; /* White background */
+    border-radius: 15px; /* Rounded corners */
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    transition: all 0.3s ease; /* Smooth transition for hover effects */
+    overflow: hidden; /* Prevents content from spilling outside */
+    display: flex; /* Uses flexbox for centering content */
+    flex-direction: column; /* Stacks content vertically */
+    justify-content: center; /* Centers content vertically */
+    align-items: center; /* Centers content horizontally */
+    position: relative; /* For absolute positioning of overlay */
+}
+
+/* Technology logo styling */
+.feature-logo {
+    width: 170px; /* Fixed width for consistency */
+    height: auto; /* Maintains aspect ratio */
+    transition: transform 0.3s ease; /* Smooth transition for hover effect */
+}
+
+/* Logo scale effect on hover */
+.feature-tile:hover .feature-logo {
+    transform: scale(1.1); /* Slightly enlarges logo on hover */
+}
+
+/* Overlay with description that appears on hover */
+.feature-overlay {
+    position: absolute; /* Positioned over the feature tile */
     top: 0;
     left: 0;
-    width: 100%;
     height: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 20px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.slide-deck:hover .slide-navigation {
-    opacity: 1;
-}
-
-.nav-arrow {
-    background-color: rgba(0, 128, 128, 0.7); /* Dark turquoise background */
-    border: none;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    font-size: 1.5rem;
-    color: white; /* White arrows for better contrast */
-    transition: all 0.3s ease;
-    z-index: 2; /* Ensure arrows are above the image */
-}
-
-.nav-arrow:hover {
-    background-color: rgba(0, 128, 128, 0.9);
-    transform: scale(1.1);
-}
-
-.slide-indicators {
-    position: absolute;
-    bottom: 15px;
-    left: 0;
     width: 100%;
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
+    background: rgba(255, 255, 255, 0.85); /* Semi-transparent white */
+    color: #333; /* Dark text for readability */
+    display: flex; /* Uses flexbox for centering */
+    align-items: center; /* Centers content vertically */
+    justify-content: center; /* Centers content horizontally */
+    opacity: 0; /* Initially invisible */
+    padding: 1rem; /* Internal spacing */
+    transition: all 0.4s ease; /* Smooth fade-in transition */
+    font-size: 1rem; /* Readable font size */
+    font-weight: 500; /* Medium weight for emphasis */
 }
 
-.slide-deck:hover .slide-indicators {
-    opacity: 1;
+/* Show overlay on hover */
+.feature-tile:hover .feature-overlay {
+    opacity: 1; /* Becomes fully visible */
 }
 
-.slide-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background-color: rgba(0, 128, 128, 0.3);
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.slide-dot.active {
-    background-color: rgba(0, 128, 128, 0.9);
-    transform: scale(1.2);
-}
-
-.slide-dot:hover {
-    background-color: rgba(0, 128, 128, 0.6);
-}
-
-/* FOOTER SECTION */
+/* Footer Section - Contains contact information and links */
 .footer {
-    position: relative;
-    background: #FFFBF0; /* Lighter cream color */
-    padding: 80px 0 40px;
-    width: 100%;
+    position: relative; /* For positioning the pseudo-element */
+    background: #FFFBF0; /* Light cream background matching hero section */
+    padding: 80px 0 40px; /* More padding on top, less on bottom */
+    width: 100%; /* Full width */
 }
 
+/* Pseudo-element for top edge styling */
 .footer::before {
-    content: "";
-    position: absolute;
+    content: ""; /* Required for pseudo-elements */
+    position: absolute; /* Positioned relative to footer */
     top: 0;
     left: 0;
     width: 100%;
-    height: 70px;
-    background: #FFFBF0; /* Lighter cream color */
-    z-index: 2;
+    height: 70px; /* Height of the top section */
+    background: #FFFBF0; /* Same color as footer */
+    z-index: 2; /* Stacking context */
 }
 
+/* Container positioning */
 .footer .container {
-    position: relative;
-    z-index: 2;
+    position: relative; /* Creates stacking context */
+    z-index: 2; /* Ensures content appears above pseudo-element */
 }
 
+/* Footer section headings */
 .footer-column h3 {
-    font-size: 20px;
-    margin-bottom: 20px;
-    color: #333;
+    font-size: 20px; /* Larger size for headings */
+    margin-bottom: 20px; /* Space below heading */
+    color: #333; /* Dark gray for readability */
 }
 
+/* Footer text styling */
 .footer-column p,
 .footer-column .footer-contact {
-    font-size: 14px;
-    color: #555;
+    font-size: 14px; /* Smaller text for footer */
+    color: #555; /* Medium gray for secondary text */
 }
 
+/* Email link styling */
 .footer-email {
-    color: #e60023;
-    text-decoration: none;
+    color: #e60023; /* Pinterest-like red color */
+    text-decoration: none; /* No underline by default */
 }
+
+/* Email link hover effect */
 .footer-email:hover {
-    text-decoration: underline;
+    text-decoration: underline; /* Adds underline on hover */
 }
 
-/* Quick Links */
+/* Footer link list items */
 .footer-link li {
-    list-style: none;
-    margin-bottom: 10px;
-}
-.footer-link li a {
-    color: #e60023;
-    text-decoration: none;
-}
-.footer-link li a:hover {
-    text-decoration: underline;
+    list-style: none; /* Removes bullet points */
+    margin-bottom: 10px; /* Space between links */
 }
 
-/* Footer bottom text */
+/* Footer link styling */
+.footer-link li a {
+    color: #e60023; /* Pinterest-like red color */
+    text-decoration: none; /* No underline by default */
+}
+
+/* Footer link hover effect */
+.footer-link li a:hover {
+    text-decoration: underline; /* Adds underline on hover */
+}
+
+/* Copyright text */
 .footer .row p {
-    margin-top: 20px;
-    color: #777;
-    font-size: 14px;
+    margin-top: 20px; /* Space above copyright */
+    color: #777; /* Light gray for less emphasis */
+    font-size: 14px; /* Smaller text size */
 }
