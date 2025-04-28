@@ -138,7 +138,7 @@ router.post('/generate-recipe', async (req, res) => {
             recipePrompt += `\n- Colors: ${hexColors.join(', ')}`;
         }
 
-        recipePrompt += `\nSuggest a main course meal. The response should be structured in the style of a recipe. Start with a creative title for the meal. Then give a brief description of the meal and how it relates to the provided context. Then give the ingredients and step for making the main dish, finally give brief suggestions for an appetizer, side, and dessert.  Use markdown.`;
+        recipePrompt += `\nSuggest a main course meal. The response should be structured in the style of a recipe. Start with a creative title for the meal. Then give a brief description of the meal and how it relates to the provided context. Then give the ingredients and steps for making the main dish, finally give brief suggestions for an appetizer, side, and dessert.  Use markdown.`;
 
         // Log the prompt being sent to Gemini
         console.log('🔍 Sending recipe prompt to Gemini:', recipePrompt);
@@ -219,7 +219,7 @@ router.post('/generate-restaurants', async (req, res) => {
     }
 
     try {
-        const prompt = `Suggest 3 restaurants in the zip code ${userLocation} that serve food like this: "${dishName.replace(/[#>*`\-]/g, '').slice(0, 400)}".\nEach suggestion should be:\n- **Restaurant Name**\n- One sentence summary why it's a match\n- Include website link if available.\nUse markdown.`;
+        const prompt = `Suggest 3 restaurants that are in the area of this zip code: ${userLocation}. They should serve food such as the food in this recipe: "${dishName.replace(/[#>*`\-]/g, '').slice(0, 400)}".\nEach suggestion should be:\n- **Restaurant Name**\n- One sentence summary why it's a match\n- Include website link if available.\nUse markdown.`;
 
         // Log the prompt being sent to Gemini
         console.log('🔍 Sending restaurant prompt to Gemini:', prompt);

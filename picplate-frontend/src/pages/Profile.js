@@ -35,8 +35,9 @@ const Profile = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('photos');
     const [modalActiveTab, setModalActiveTab] = useState('analysis');
-    const [useEmotions, setUseEmotions] = useState(false);
-    const [useColors, setUseColors] = useState(false);
+    const [selectedLabels, setSelectedLabels] = useState([]);
+    const [selectedEmotions, setSelectedEmotions] = useState([]);
+    const [selectedColors, setSelectedColors] = useState([]);
     const [userLocation, setUserLocation] = useState('');
     const [zipCodeError, setZipCodeError] = useState('');
     const [geminiOutput, setGeminiOutput] = useState('');
@@ -220,6 +221,9 @@ const Profile = () => {
         setRestaurantOutput('');
         setTemperature(1.0); // Reset temperature to 1.0
         setProcessedImage(null); // Reset processed image
+        setSelectedLabels([]); // Reset selected labels
+        setSelectedEmotions([]); // Reset selected emotions
+        setSelectedColors([]); // Reset selected colors
 
         try {
             const response = await axios.post(`${URL}/api/vision`, {
@@ -354,11 +358,9 @@ const Profile = () => {
             drawImageAndBoxes();
 
             const response = await axios.post(`${URL}/api/gemini/generate-recipe`, {
-                labels: selectedData.labels,
-                emotions: selectedData.emotions,
-                colors: selectedData.colors,
-                useEmotions: useEmotions,
-                useColors: useColors,
+                labels: selectedLabels.length > 0 ? selectedLabels : selectedData.labels,
+                emotions: selectedEmotions.length > 0 ? selectedEmotions : [],
+                colors: selectedColors.length > 0 ? selectedColors : [],
                 imageUrl: selectedPhoto.url,
                 temperature: temperature, // Add temperature parameter
                 processedImage: processedImage // Pass the processed image from vision API
@@ -948,60 +950,136 @@ const Profile = () => {
                                 </ul>
                                 {modalActiveTab === 'analysis' && selectedData && (
                                     <div>
-                                        <h5>Checkbox Filters</h5>
-                                        <label>
-                                            <input
-                                                type="checkbox"
-                                                checked={useEmotions}
-                                                onChange={() => setUseEmotions(!useEmotions)}
-                                            />{' '}
-                                            Emotions
-                                        </label>
-                                        <label className="ml-3">
-                                            <input
-                                                type="checkbox"
-                                                checked={useColors}
-                                                onChange={() => setUseColors(!useColors)}
-                                            />{' '}
-                                            Colors
-                                        </label>
-
                                         <div style={{ marginTop: '20px' }}>
                                             <strong>Labels:</strong>
-                                            <ul>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
                                                 {selectedData.labelDescriptions ? (
                                                     selectedData.labelDescriptions.map((label, idx) => (
-                                                        <li key={idx}>{label}</li>
+                                                        <div
+                                                            key={idx}
+                                                            onClick={() => {
+                                                                if (selectedLabels.includes(label)) {
+                                                                    setSelectedLabels(selectedLabels.filter(l => l !== label));
+                                                                } else {
+                                                                    setSelectedLabels([...selectedLabels, label]);
+                                                                }
+                                                            }}
+                                                            style={{
+                                                                backgroundColor: selectedLabels.includes(label) ? '#CD5700' : '#40E0D0',
+                                                                color: 'white',
+                                                                padding: '6px 12px',
+                                                                borderRadius: '20px',
+                                                                cursor: 'pointer',
+                                                                fontSize: '14px'
+                                                            }}
+                                                        >
+                                                            {label}
+                                                        </div>
                                                     ))
                                                 ) : (
-                                                    selectedData.labels.map((label, idx) => (
-                                                        <li key={idx}>{typeof label === 'string' ? label : label.description}</li>
-                                                    ))
+                                                    selectedData.labels.map((label, idx) => {
+                                                        const labelText = typeof label === 'string' ? label : label.description;
+                                                        return (
+                                                            <div
+                                                                key={idx}
+                                                                onClick={() => {
+                                                                    if (selectedLabels.includes(labelText)) {
+                                                                        setSelectedLabels(selectedLabels.filter(l => l !== labelText));
+                                                                    } else {
+                                                                        setSelectedLabels([...selectedLabels, labelText]);
+                                                                    }
+                                                                }}
+                                                                style={{
+                                                                    backgroundColor: selectedLabels.includes(labelText) ? '#CD5700' : '#40E0D0',
+                                                                    color: 'white',
+                                                                    padding: '6px 12px',
+                                                                    borderRadius: '20px',
+                                                                    cursor: 'pointer',
+                                                                    fontSize: '14px'
+                                                                }}
+                                                            >
+                                                                {labelText}
+                                                            </div>
+                                                        );
+                                                    })
                                                 )}
-                                            </ul>
+                                            </div>
 
-                                            <strong>Emotions:</strong>
-                                            <ul>
+                                            <strong style={{ marginTop: '20px', display: 'block' }}>Emotions:</strong>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
                                                 {selectedData.emotions.length > 0 ? (
-                                                    selectedData.emotions.map((e, i) => <li key={i}>{e}</li>)
+                                                    selectedData.emotions.map((emotion, idx) => (
+                                                        <div
+                                                            key={idx}
+                                                            onClick={() => {
+                                                                if (selectedEmotions.includes(emotion)) {
+                                                                    setSelectedEmotions(selectedEmotions.filter(e => e !== emotion));
+                                                                } else {
+                                                                    setSelectedEmotions([...selectedEmotions, emotion]);
+                                                                }
+                                                            }}
+                                                            style={{
+                                                                backgroundColor: selectedEmotions.includes(emotion) ? '#CD5700' : '#40E0D0',
+                                                                color: 'white',
+                                                                padding: '6px 12px',
+                                                                borderRadius: '20px',
+                                                                cursor: 'pointer',
+                                                                fontSize: '14px'
+                                                            }}
+                                                        >
+                                                            {emotion}
+                                                        </div>
+                                                    ))
                                                 ) : (
-                                                    <li>No emotions detected.</li>
+                                                    <div>No emotions detected.</div>
                                                 )}
-                                            </ul>
+                                            </div>
 
-                                            <strong>Colors:</strong>
-                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                                                {selectedData.colors.map((color, idx) => (
-                                                    <div
-                                                        key={idx}
-                                                        style={{
-                                                            width: '25px',
-                                                            height: '25px',
-                                                            backgroundColor: `rgb(${color.red},${color.green},${color.blue})`,
-                                                            border: '1px solid #999'
-                                                        }}
-                                                    />
-                                                ))}
+                                            <strong style={{ marginTop: '20px', display: 'block' }}>Colors:</strong>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
+                                                {selectedData.colors.map((color, idx) => {
+                                                    const colorKey = `rgb(${color.red},${color.green},${color.blue})`;
+                                                    return (
+                                                        <div
+                                                            key={idx}
+                                                            onClick={() => {
+                                                                if (selectedColors.some(c => 
+                                                                    c.red === color.red && 
+                                                                    c.green === color.green && 
+                                                                    c.blue === color.blue
+                                                                )) {
+                                                                    setSelectedColors(selectedColors.filter(c => 
+                                                                        !(c.red === color.red && 
+                                                                        c.green === color.green && 
+                                                                        c.blue === color.blue)
+                                                                    ));
+                                                                } else {
+                                                                    setSelectedColors([...selectedColors, color]);
+                                                                }
+                                                            }}
+                                                            style={{
+                                                                display: 'flex',
+                                                                flexDirection: 'column',
+                                                                alignItems: 'center',
+                                                                cursor: 'pointer'
+                                                            }}
+                                                        >
+                                                            <div
+                                                                style={{
+                                                                    width: '30px',
+                                                                    height: '30px',
+                                                                    backgroundColor: colorKey,
+                                                                    border: selectedColors.some(c => 
+                                                                        c.red === color.red && 
+                                                                        c.green === color.green && 
+                                                                        c.blue === color.blue
+                                                                    ) ? '3px solid #CD5700' : '3px solid #40E0D0',
+                                                                    borderRadius: '4px'
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     </div>
