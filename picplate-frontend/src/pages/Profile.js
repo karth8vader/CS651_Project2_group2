@@ -148,10 +148,9 @@ const Profile = () => {
      * It sends the photo to the Vision API for analysis, resets the UI state,
      * and opens the modal to display the results.
      * 
-     * @param {string} photoId - The ID of the selected photo
      * @param {string} photoUrl - The URL of the selected photo
      */
-    const handleAnalyzePhoto = async (photoId, photoUrl) => {
+    const handleAnalyzePhoto = async (photoUrl) => {
         // Get authentication token from localStorage
         const googleUserItem = localStorage.getItem('google_user');
         const googleUser = googleUserItem && googleUserItem !== 'undefined' ? JSON.parse(googleUserItem) : null;
@@ -167,7 +166,7 @@ const Profile = () => {
         refreshUserEmailState();
 
         // Update selected photo and open modal
-        setSelectedPhoto({ id: photoId, url: photoUrl });
+        setSelectedPhoto({ url: photoUrl });
         setModalOpen(true);
 
         // Reset all state variables related to the modal
@@ -199,10 +198,10 @@ const Profile = () => {
                 setProcessedImage(null);
             }
 
-            // Store analysis results in state, keyed by photo ID
+            // Store analysis results in state, keyed by photo URL
             setAnalysisResults(prev => ({
                 ...prev,
-                [photoId]: response.data
+                [photoUrl]: response.data
             }));
         } catch (err) {
             console.error('Vision API error:', err);
@@ -210,7 +209,7 @@ const Profile = () => {
         }
     };
 
-    const selectedData = selectedPhoto ? analysisResults[selectedPhoto.id] : null;
+    const selectedData = selectedPhoto ? analysisResults[selectedPhoto.url] : null;
 
     // Function to draw image and bounding boxes on canvas (now using imported function)
     const handleDrawImageAndBoxes = () => {
@@ -486,7 +485,6 @@ const Profile = () => {
             // Prepare image data for saving
             let imageData = null;
             let photoUrl = selectedPhoto?.url || '';
-            let photoId = selectedPhoto?.id || '';
 
             // If AI-generated images exist, use the currently displayed one
             if (generatedImages.length > 0 && currentImageIndex >= 0 && currentImageIndex < generatedImages.length) {
@@ -504,16 +502,57 @@ const Profile = () => {
                 }
             } else {
                 console.log('No generated images, using original photo URL');
+                // If no image is generated, we'll convert the selected image to a string using our backend proxy
+                if (selectedPhoto?.url) {
+                    try {
+                        // Get Google authentication token
+                        const googleUserItem = localStorage.getItem('google_user');
+                        const googleUser = googleUserItem && googleUserItem !== 'undefined' ? JSON.parse(googleUserItem) : null;
+                        const accessToken = googleUser?.access_token || localStorage.getItem('google_access_token');
+
+                        console.log('Fetching image via backend proxy to avoid CORS issues');
+
+                        // Use our backend proxy to fetch and convert the image
+                        const proxyResponse = await axios.post(`${URL}/api/imageProxy/fetch`, {
+                            imageUrl: selectedPhoto.url,
+                            accessToken: accessToken
+                        });
+
+                        if (proxyResponse.data.success && proxyResponse.data.imageData) {
+                            // Use the base64 image data returned from our proxy
+                            imageData = proxyResponse.data.imageData;
+                            console.log('Successfully fetched and converted image via proxy, approx size: ' + 
+                                      (imageData ? Math.round(imageData.length / 1024) + 'KB' : 'unknown'));
+                        } else {
+                            throw new Error('Failed to get image data from proxy');
+                        }
+                    } catch (fetchError) {
+                        console.error('Error fetching and converting original photo:', fetchError);
+
+                        // Log detailed error information for debugging
+                        if (fetchError.response) {
+                            console.error('Error details:', {
+                                status: fetchError.response.status,
+                                data: fetchError.response.data
+                            });
+                        }
+
+                        // If there's an error, we won't have image data to save
+                        imageData = null;
+
+                        // Show error toast to user
+                        toast.error('Could not convert Google Photos image. Using URL instead.', { position: 'top-center' });
+                    }
+                }
             }
 
-            // Save to backend API
+            // Save to backend API - only send photoUrl if we don't have imageData
             const response = await axios.post(`${URL}/api/history/save`, {
                 email: freshEmail,                // User identifier
                 recipePrompt: trimmedRecipe,      // Generated recipe
                 restaurantPrompt: trimmedRestaurants || 'No restaurant suggestions available.',
-                photoUrl: photoUrl,               // Original photo URL (if no generated image)
-                photoId: photoId,                 // Original photo ID for refreshing URLs later
-                imageData: imageData              // Generated image data (if available)
+                photoUrl: imageData ? null : photoUrl,  // Only use photoUrl if we don't have imageData
+                imageData: imageData              // Image data (either generated or from original photo)
             });
 
             // Handle successful save
@@ -584,29 +623,8 @@ const Profile = () => {
                 return;
             }
 
-            // Refresh photoUrl if photoId exists
-            const refreshedHistory = await Promise.all(
-                fetchedHistory.map(async (entry) => {
-                    if (entry.photoId) {
-                        try {
-                            const photoResponse = await axios.get(`https://photoslibrary.googleapis.com/v1/mediaItems/${entry.photoId}`, {
-                                headers: {
-                                    Authorization: `Bearer ${accessToken}`
-                                }
-                            });
-                            return {
-                                ...entry,
-                                photoUrl: photoResponse.data.baseUrl // Updated fresh URL
-                            };
-                        } catch (error) {
-                            console.error('Failed to refresh photo URL for entry:', entry, error);
-                            // fallback to the old photoUrl if fetch fails
-                            return entry;
-                        }
-                    }
-                    return entry;
-                })
-            );
+            // No need to refresh photoUrl as we're now storing the actual image in Firestore
+            const refreshedHistory = fetchedHistory;
 
             console.log('Refreshed history entries:', refreshedHistory);
             setHistoryEntries(refreshedHistory);
@@ -682,7 +700,7 @@ const Profile = () => {
                             <div
                                 key={photo.id}
                                 className="photo-wrapper photo-item"
-                                onClick={() => handleAnalyzePhoto(photo.id, photo.baseUrl)}
+                                onClick={() => handleAnalyzePhoto(photo.baseUrl)}
                             >
                                 <div className="image-container">
                                     <img
@@ -730,9 +748,7 @@ const Profile = () => {
                                         >
                                             <div style={{ position: 'relative' }}>
                                                 <img
-                                                    src={entry.photoUrl && entry.photoUrl.includes('storage.googleapis.com') 
-                                                        ? entry.photoUrl 
-                                                        : `${entry.photoUrl}=w400`}
+                                                    src={entry.photoUrl}
                                                     alt="Saved"
                                                     className="history-card-image"
                                                 />

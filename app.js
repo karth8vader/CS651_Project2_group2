@@ -22,6 +22,7 @@ var authRouter = require('./routes/auth');
 var visionRouter = require('./routes/vision');
 var geminiRouter = require('./routes/gemini');
 var historyRouter = require('./routes/history');
+var imageProxyRouter = require('./routes/imageProxy');
 
 // Import CORS middleware for cross-origin requests
 const cors = require('cors');
@@ -68,6 +69,7 @@ app.use('/api/auth', authRouter);            // Authentication endpoints
 app.use('/api/vision', visionRouter);        // Google Vision API integration
 app.use('/api/gemini', geminiRouter);        // Google Gemini AI integration
 app.use('/api/history', historyRouter);      // User history management
+app.use('/api/imageProxy', imageProxyRouter); // Image proxy for Google Photos
 
 // ===== STATIC FILES =====
 // Serve the React frontend from the build directory
