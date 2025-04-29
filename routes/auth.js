@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const admin = require('../firebase');
+const { logToCloud } = require('../utils/logger');
 
 
 // Save Google user login
@@ -16,10 +17,22 @@ router.post('/login', async (req, res) => {
 
         const docRef = admin.firestore().collection('users').doc(userInfo.email);
         await docRef.set(userInfo, { merge: true });
+        await logToCloud({  // 👈 Added logging after success
+            message: 'User authenticated successfully',
+            email: userInfo.email,
+            name: userInfo.name || userInfo.given_name || '',
+            timestamp: new Date().toISOString()
+        });
 
         res.json({ user: userInfo });
     } catch (err) {
         console.error(err);
+        await logToCloud({  // 👈 Added logging on error
+            message: 'Failed to authenticate user',
+            error: err.message,
+            stack: err.stack,
+            timestamp: new Date().toISOString()
+        });
         res.status(500).json({ error: 'Failed to authenticate user' });
     }
 });

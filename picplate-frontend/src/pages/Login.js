@@ -60,15 +60,40 @@ const Login = () => {
             localStorage.setItem('google_user', JSON.stringify(tokenResponse));
 
             try {
-                const { data } = await axios.post(`${URL}/api/auth/login`, {
+                // 1. Fetch user info manually
+                const userInfo = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+                    headers: {
+                        Authorization: `Bearer ${tokenResponse.access_token}`,
+                    },
+                });
+
+                console.log('Google User Info:', userInfo.data);
+
+                // Check if email exists
+                if (!userInfo.data.email) {
+                    console.error('Login failed: No email found');
+                    alert('Google Login failed. Please try again.');
+                    return; // Stop here
+                }
+
+                // 2. Save user info
+                const user = {
+                    name: userInfo.data.name || userInfo.data.given_name || 'Guest',
+                    email: userInfo.data.email,
+                    picture: userInfo.data.picture || '',
+                };
+                localStorage.setItem('user', JSON.stringify(user));
+
+                // 3. Optionally, still call your backend to save in Firestore
+                await axios.post(`${URL}/api/auth/login`, {
                     accessToken: tokenResponse.access_token,
                 });
-                localStorage.setItem('user', JSON.stringify(data.user));
-            } catch (err) {
-                console.error('Google user save failed', err);
-            }
 
-            navigate('/profile');
+                navigate('/profile');
+            } catch (err) {
+                console.error('Google login failed:', err);
+                alert('Google Login failed. Please try again.');
+            }
         },
         onError: () => {
             console.error('Google Login Failed');
