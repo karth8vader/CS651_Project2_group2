@@ -13,6 +13,7 @@ const { VertexAI } = require('@google-cloud/vertexai');
 const { GoogleGenAI } = require('@google/genai');
 const { ImageAnnotatorClient } = require('@google-cloud/vision');
 const sharp = require('sharp');
+const { logToCloud } = require('../utils/logger');
 require('dotenv').config();
 
 // Google Cloud project configuration
@@ -138,6 +139,14 @@ async function processImageForFaces(imageBuffer) {
 router.post('/generate-recipe', async (req, res) => {
     const { labels, emotions, colors, useEmotions, useColors, imageUrl, temperature, imageBase64, processedImage } = req.body;
 
+    //logging gemini request console
+    await logToCloud({
+        message: 'Incoming Gemini request - generate-recipe',
+        route: '/api/gemini/generate-recipe',
+        requestBody: { labels, emotions, colors, temperature },
+        timestamp: new Date().toISOString()
+    });
+
     if (!labels || !Array.isArray(labels)) {
         return res.status(400).json({ error: 'Labels are required for generation.' });
     }
@@ -218,9 +227,22 @@ router.post('/generate-recipe', async (req, res) => {
         const recipeResponse = await recipeResult.response;
         const recipeText = recipeResponse?.candidates?.[0]?.content?.parts?.[0]?.text || 'No recipe generated.';
 
+        //logging gemini response cloud console
+        await logToCloud({
+            message: 'Gemini recipe generated successfully',
+            responsePreview: recipeResponse?.candidates?.[0]?.content?.parts?.[0]?.text?.slice(0, 100) || 'No recipe generated',
+            timestamp: new Date().toISOString()
+        });
         res.json({ recipe: recipeText }); // 🚀 Only recipe returned
     } catch (err) {
         console.error('❌ Gemini API error:', err);
+        //logging error for generate-recipe
+        await logToCloud({
+            message: 'Gemini generate-recipe failed',
+            error: err.message,
+            stack: err.stack,
+            timestamp: new Date().toISOString()
+        });
         res.status(500).json({
             error: `Failed to generate suggestion: ${err.message}`,
             details: err.response?.data || err.stack
@@ -232,6 +254,13 @@ router.post('/generate-recipe', async (req, res) => {
 router.post('/generate-restaurants', async (req, res) => {
     const { dishName, userLocation, imageBase64, processedImage } = req.body;
 
+    //logging gemini request for restaurant
+    await logToCloud({
+        message: 'Incoming Gemini request - generate-restaurants',
+        route: '/api/gemini/generate-restaurants',
+        requestBody: { dishName, userLocation },
+        timestamp: new Date().toISOString()
+    });
     if (!dishName || !userLocation) {
         return res.status(400).json({ error: 'Dish name and user location are required.' });
     }
@@ -294,11 +323,24 @@ router.post('/generate-restaurants', async (req, res) => {
         });
 
         const response = await result.response;
+        //gemini response restaurant
+        await logToCloud({
+            message: 'Gemini restaurant suggestions generated successfully',
+            responsePreview: response?.candidates?.[0]?.content?.parts?.[0]?.text?.slice(0, 100) || 'No restaurants generated',
+            timestamp: new Date().toISOString()
+        });
         const text = response?.candidates?.[0]?.content?.parts?.[0]?.text || 'No restaurant suggestions generated.';
 
         res.json({ restaurants: text });
     } catch (err) {
         console.error('❌ Gemini API error (restaurant generation):', err);
+        //gemini error restaurant
+        await logToCloud({
+            message: 'Gemini generate-restaurants failed',
+            error: err.message,
+            stack: err.stack,
+            timestamp: new Date().toISOString()
+        });
         res.status(500).json({
             error: `Failed to generate restaurant suggestions: ${err.message}`,
             details: err.response?.data || err.stack
@@ -310,6 +352,13 @@ router.post('/generate-restaurants', async (req, res) => {
 router.post('/generate-images', async (req, res) => {
     const { recipeText } = req.body;
 
+    //gemini request image
+    await logToCloud({
+        message: 'Incoming Gemini request - generate-images',
+        route: '/api/gemini/generate-images',
+        requestBody: { recipeText },
+        timestamp: new Date().toISOString()
+    });
     if (!recipeText) {
         return res.status(400).json({ error: 'Recipe text is required for image generation.' });
     }
@@ -337,6 +386,13 @@ router.post('/generate-images', async (req, res) => {
             },
         });
 
+        //gemini response image
+        await logToCloud({
+            message: 'Gemini images generated successfully',
+            imageCount: response.generatedImages.length || 0,
+            timestamp: new Date().toISOString()
+        });
+
         // Extract image data from the response
         const images = [];
         let idx = 0;
@@ -353,6 +409,13 @@ router.post('/generate-images', async (req, res) => {
         res.json({ images });
     } catch (err) {
         console.error('❌ Image generation API error:', err);
+        //gemini error image
+        await logToCloud({
+            message: 'Gemini generate-images failed',
+            error: err.message,
+            stack: err.stack,
+            timestamp: new Date().toISOString()
+        });
         res.status(500).json({
             error: `Failed to generate images: ${err.message}`,
             details: err.response?.data || err.stack

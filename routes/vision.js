@@ -12,6 +12,7 @@ const path = require('path');
 const axios = require('axios');
 const sharp = require('sharp');
 const router = express.Router();
+const { logToCloud } = require('../utils/logger');
 
 // Initialize the Vision API client with service account credentials
 // The service account key provides authentication for Google Cloud APIs
@@ -106,6 +107,12 @@ router.post('/', async (req, res) => {
     }
 
     try {
+        // Log incoming request
+        await logToCloud({
+            message: 'Vision API request received',
+            imageUrl,
+            timestamp: new Date().toISOString()
+        });
         // Download image from Google Photos using the provided access token
         // The arraybuffer responseType ensures we get binary data
         const imageResponse = await axios.get(imageUrl, {
@@ -179,6 +186,15 @@ router.post('/', async (req, res) => {
         // Convert the processed image back to base64 for the response
         const processedImageBase64 = processedImageBuffer.toString('base64');
 
+        // After successful analysis
+        await logToCloud({
+            message: 'Vision API analysis completed',
+            labelsDetected: labels.map(label => label.description),
+            emotionsDetected: emotions,
+            colorsDetected: colors.length,
+            timestamp: new Date().toISOString()
+        });
+
         // Send a comprehensive response with all analysis data
         res.json({ 
             labels,  // Objects and scenes with bounding polygons
@@ -203,6 +219,12 @@ router.post('/', async (req, res) => {
         // Log error details for debugging
         console.log('🔍 Received imageUrl:', imageUrl);
         console.error('Vision API error:', err);
+        await logToCloud({
+            message: 'Vision API error',
+            error: err.message,
+            stack: err.stack,
+            timestamp: new Date().toISOString()
+        });
         res.status(500).json({ error: 'Failed to analyze image' });
     }
 });

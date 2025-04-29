@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const admin = require('../firebase');
+const { logToCloud } = require('../utils/logger');
 
 // Save history for a user
 router.post('/save', async (req, res) => {
@@ -30,9 +31,23 @@ router.post('/save', async (req, res) => {
             timestamp: admin.firestore.FieldValue.serverTimestamp()
         });
 
+        // Log successful history save
+        await logToCloud({
+            message: 'History entry saved',
+            email: email,
+            recipePromptPreview: recipePrompt?.slice(0, 100),
+            timestamp: new Date().toISOString()
+        });
         res.json({ message: 'History saved successfully.', id: doc.id });
     } catch (error) {
         console.error('Error saving history:', error);
+        // Log error while saving history
+        await logToCloud({
+            message: 'Error saving history',
+            email: email || 'unknown',
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
         res.status(500).json({ error: 'Failed to save history.' });
     }
 });
@@ -55,9 +70,23 @@ router.post('/get', async (req, res) => {
 
         const history = historySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
+        // Log successful fetch
+        await logToCloud({
+            message: 'History fetched',
+            email: email,
+            numberOfEntries: history.length,
+            timestamp: new Date().toISOString()
+        });
         res.json({ history });
     } catch (error) {
         console.error('Error fetching history:', error);
+        // Log error while fetching history
+        await logToCloud({
+            message: 'Error fetching history',
+            email: email || 'unknown',
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
         res.status(500).json({ error: 'Failed to fetch history.' });
     }
 });
@@ -78,9 +107,24 @@ router.delete('/delete/:email/:historyId', async (req, res) => {
             .doc(historyId)
             .delete();
 
+        // Log successful deletion
+        await logToCloud({
+            message: 'History entry deleted',
+            email: email,
+            historyId: historyId,
+            timestamp: new Date().toISOString()
+        });
         res.json({ message: 'History entry deleted successfully.' });
     } catch (error) {
         console.error('Error deleting history:', error);
+        // Log error while deleting history
+        await logToCloud({
+            message: 'Error deleting history entry',
+            email: email || 'unknown',
+            historyId: historyId || 'unknown',
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
         res.status(500).json({ error: 'Failed to delete history.' });
     }
 });

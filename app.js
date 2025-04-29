@@ -7,6 +7,11 @@
  * PicPlate is a web application that analyzes food images using Google's
  * Vision API and generates recipes using Google's Gemini AI.
  */
+// Load environment variables from .env file (only in development)
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
+
 
 // Import required dependencies
 var createError = require('http-errors');
@@ -29,6 +34,10 @@ const cors = require('cors');
 
 // Initialize Express application
 var app = express();
+
+// Google Cloud logging file
+const { logToCloud } = require('./utils/logger');
+
 
 // Configure allowed origins for CORS
 const allowedOrigins = [

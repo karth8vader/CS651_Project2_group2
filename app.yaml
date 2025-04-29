@@ -1,4 +1,4 @@
-runtime: nodejs18
+runtime: nodejs20
 
 instance_class: F2
 
@@ -6,6 +6,11 @@ env_variables:
   NODE_ENV: production
 
 handlers:
+  # Send API requests to backend server (Express)
+  - url: /api/.*
+    script: auto
+
+  # Static frontend files
   - url: /static
     static_dir: picplate-frontend/build/static
 
@@ -13,6 +18,7 @@ handlers:
     static_files: picplate-frontend/build/privacy-policy.html
     upload: picplate-frontend/build/privacy-policy.html
 
+  # All other frontend routes
   - url: /.*
     static_files: picplate-frontend/build/index.html
     upload: picplate-frontend/build/index.html

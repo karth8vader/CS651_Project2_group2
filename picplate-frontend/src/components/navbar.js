@@ -6,8 +6,16 @@ import picplateLogo from '../assets/images/picplate-logo.svg';
 const Navbar = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const userString = localStorage.getItem('user');
-    const user = userString ? JSON.parse(userString) : null;
+    let user = null;
+    try {
+        const userString = localStorage.getItem('user');
+        if (userString) {
+            user = JSON.parse(userString);
+        }
+    } catch (err) {
+        console.error('Error parsing user from localStorage:', err);
+        user = null;
+    }
 
     const handleLogout = () => {
         localStorage.removeItem('user');
@@ -49,12 +57,12 @@ const Navbar = () => {
 
                     <div className="collapse navbar-collapse justify-content-end" id="navbarsPicPlate">
                         <ul className="navbar-nav">
-                            {!user && (
+                            {!user?.name && (
                                 <li className="nav-item">
                                     <button className="btn btn-turquoise rounded-pill ms-2" onClick={() => navigate('/login')}>Login</button>
                                 </li>
                             )}
-                            {user && (
+                            {user?.name && (
                                 <>
                                     <li className="nav-item nav-user">
                                         <span className="nav-link text-white" onClick={() => navigate('/profile')} style={{ cursor: 'pointer' }}>Hello {user.name || user.given_name}</span>
