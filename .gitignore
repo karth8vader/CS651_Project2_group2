@@ -26,3 +26,4 @@ picplate-service-account.json
 serviceAccountKey.json
 /gemini-key.json
 /.idea/jsLibraryMappings.xml
+/.gcloudignore
